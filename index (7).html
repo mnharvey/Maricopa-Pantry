@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Maricopa Pantry — Volunteer Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="pantry.css" />
+</head>
+<body>
+
+<div class="header">
+  <img class="header-logo" src="https://img1.wsimg.com/isteam/ip/4d107baa-83e4-44ec-a71f-4f505279b444/IMG_5026.PNG" alt="Maricopa Pantry" />
+  <div class="header-titles">
+    <div class="header-title">Maricopa Pantry</div>
+    <div class="header-sub">Volunteer Portal · Neighbors Helping Neighbors</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- TODAY'S QUICK GLANCE -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Today at the Pantry</div>
+        <div class="card-subtitle" id="todayDate"></div>
+      </div>
+      <button class="btn btn-neutral" onclick="refreshStats()">↻ Refresh</button>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat ok">
+        <div class="stat-value" id="stat-families">—</div>
+        <div class="stat-label">Families Served This Week</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-people">—</div>
+        <div class="stat-label">People in Households</div>
+      </div>
+      <div class="stat warn" id="stat-expiring-wrap">
+        <div class="stat-value" id="stat-expiring">—</div>
+        <div class="stat-label">Items Expiring Soon</div>
+      </div>
+      <div class="stat alert" id="stat-maint-wrap">
+        <div class="stat-value" id="stat-maint">—</div>
+        <div class="stat-label">Maintenance Due</div>
+      </div>
+    </div>
+
+    <div class="notice notice-info" style="margin-top: var(--s4); margin-bottom: 0;">
+      💡 Stats update automatically as you use the tools. Use <strong>Export Backup</strong> at the bottom of each tool to save your data.
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <h2 class="section-title">Tools</h2>
+  <div class="tile-grid">
+
+    <a class="tile" href="signin.html">
+      <div class="tile-icon">📝</div>
+      <div class="tile-title">Sign-In Sheet</div>
+      <div class="tile-desc">Digital sign-in OR scan paper sheets to count families. Pulls a daily report.</div>
+    </a>
+
+    <div class="tile" style="opacity:0.55; cursor:not-allowed;" onclick="return false;">
+      <div class="tile-icon">📦</div>
+      <div class="tile-title">Inventory <span style="font-size:11px; background:var(--amber-soft); color:var(--amber); padding:2px 8px; border-radius:4px; vertical-align:middle;">SOON</span></div>
+      <div class="tile-desc">Track food (FIFO), equipment parts, and distribution supplies. By case, Gaylord, or pallet.</div>
+    </div>
+
+    <div class="tile" style="opacity:0.55; cursor:not-allowed;" onclick="return false;">
+      <div class="tile-icon">🍽️</div>
+      <div class="tile-title">Distribution & Burn Rate <span style="font-size:11px; background:var(--amber-soft); color:var(--amber); padding:2px 8px; border-radius:4px; vertical-align:middle;">SOON</span></div>
+      <div class="tile-desc">Log boxes given out, see weeks of supply remaining, flag what to use up.</div>
+    </div>
+
+    <div class="tile" style="opacity:0.55; cursor:not-allowed;" onclick="return false;">
+      <div class="tile-icon">🔧</div>
+      <div class="tile-title">Maintenance <span style="font-size:11px; background:var(--amber-soft); color:var(--amber); padding:2px 8px; border-radius:4px; vertical-align:middle;">SOON</span></div>
+      <div class="tile-desc">Equipment checks, temperature logs, and scheduled service for trucks, fridges, HVAC.</div>
+    </div>
+
+    <div class="tile" style="opacity:0.55; cursor:not-allowed;" onclick="return false;">
+      <div class="tile-icon">🙋</div>
+      <div class="tile-title">Volunteer Hours <span style="font-size:11px; background:var(--amber-soft); color:var(--amber); padding:2px 8px; border-radius:4px; vertical-align:middle;">SOON</span></div>
+      <div class="tile-desc">Track who showed up and for how long. Funders ask for these numbers.</div>
+    </div>
+
+    <a class="tile" href="grants.html">
+      <div class="tile-icon">✍️</div>
+      <div class="tile-title">Grant Writing</div>
+      <div class="tile-desc">Org profile, AI-powered drafter, budget narratives, pipeline tracker.</div>
+    </a>
+
+  </div>
+
+  <!-- BACKUP / RESTORE -->
+  <h2 class="section-title" style="margin-top: var(--s7);">Data Backup</h2>
+  <div class="card">
+    <p style="margin-bottom: var(--s3);">All tool data lives in your browser. <strong>Export a backup at the end of each session</strong> so nothing is lost.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-large" onclick="exportAll()">📥 Export All Data</button>
+      <button class="btn btn-secondary btn-large" onclick="document.getElementById('importFile').click()">📤 Restore from Backup</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importAll(event)" />
+    </div>
+  </div>
+
+  <div class="footer">
+    Maricopa Pantry · #neighborshelpingneighbors · <a href="https://maricopapantry.org" style="color: var(--red);">maricopapantry.org</a>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ============================================================
+// SHARED DATA LAYER — used by all pages
+// All tools read/write to window.localStorage under one key
+// ============================================================
+const STORAGE_KEY = 'maricopa_pantry_v1';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : defaultData();
+  } catch (e) { return defaultData(); }
+}
+function defaultData() {
+  return {
+    signins: [],        // {date, householdSize, zip, isNew, dietary, language, signinMode}
+    inventory: [],      // {id, name, category, type, unit, qty, expDate, location, source, vendor, reorder, notes}
+    distributions: [],  // {date, families, people, boxesGiven, milkcratesGiven, notes}
+    maintenance: [],    // {id, equipment, task, frequency, lastDone, nextDue, assignedTo, notes}
+    volunteers: [],     // {id, name, date, hoursIn, hoursOut, role, notes}
+    settings: { language: 'en' }
+  };
+}
+function saveData(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+  catch (e) { showToast('Save failed — storage may be full', true); }
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { t.className = 'toast'; }, 2500);
+}
+
+// ============================================================
+// HOME PAGE STATS
+// ============================================================
+function refreshStats() {
+  const data = loadData();
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  document.getElementById('todayDate').textContent = dateStr;
+
+  // This week's families (last 7 days)
+  const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+  const recentSignins = data.signins.filter(s => new Date(s.date) >= weekAgo);
+  document.getElementById('stat-families').textContent = recentSignins.length;
+  const totalPeople = recentSignins.reduce((sum, s) => sum + (parseInt(s.householdSize) || 0), 0);
+  document.getElementById('stat-people').textContent = totalPeople;
+
+  // Expiring soon (within 14 days)
+  const twoWeeks = new Date(today); twoWeeks.setDate(twoWeeks.getDate() + 14);
+  const expiring = data.inventory.filter(i => i.expDate && new Date(i.expDate) <= twoWeeks && new Date(i.expDate) >= today);
+  document.getElementById('stat-expiring').textContent = expiring.length;
+  if (expiring.length === 0) document.getElementById('stat-expiring-wrap').classList.remove('warn');
+
+  // Maintenance due
+  const maintDue = data.maintenance.filter(m => m.nextDue && new Date(m.nextDue) <= today).length;
+  document.getElementById('stat-maint').textContent = maintDue;
+  if (maintDue === 0) document.getElementById('stat-maint-wrap').classList.remove('alert');
+}
+
+// ============================================================
+// BACKUP / RESTORE
+// ============================================================
+function exportAll() {
+  const data = loadData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'maricopa_pantry_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup downloaded');
+}
+
+function importAll(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!confirm('Restore from backup? This will replace all current data in the browser.')) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    try {
+      const imported = JSON.parse(evt.target.result);
+      saveData(imported);
+      refreshStats();
+      showToast('Backup restored');
+    } catch (err) {
+      showToast('Could not read backup file', true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+refreshStats();
+</script>
+
+</body>
+</html>
