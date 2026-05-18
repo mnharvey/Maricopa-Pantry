@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Maintenance · Maricopa Pantry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="pantry.css" />
+<style>
+  /* Sub-tabs */
+  .subtabs {
+    display: flex; gap: 0; background: var(--white);
+    border: 1px solid var(--line); border-radius: 8px;
+    overflow: hidden; margin-bottom: var(--s5);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .subtab {
+    flex: 1; padding: var(--s4); border: none; background: var(--white);
+    font-family: inherit; font-size: var(--font-body); font-weight: 600;
+    color: var(--gray); cursor: pointer; min-height: var(--tap-min);
+    border-bottom: 3px solid transparent;
+  }
+  .subtab:hover { background: var(--cream); }
+  .subtab.active { color: var(--red); border-bottom-color: var(--red); background: var(--red-soft); }
+  @media (max-width: 600px) { .subtab { font-size: 14px; padding: var(--s3); } }
+
+  .subpanel { display: none; }
+  .subpanel.active { display: block; }
+
+  /* Task cards */
+  .task-card {
+    background: var(--white); border: 1px solid var(--line); border-left: 4px solid var(--line);
+    border-radius: 8px; padding: var(--s4); margin-bottom: var(--s3);
+    display: grid; grid-template-columns: 1fr auto; gap: var(--s3); align-items: center;
+  }
+  .task-card.due-soon { border-left-color: var(--amber); background: var(--amber-soft); }
+  .task-card.overdue { border-left-color: var(--red); background: #fdecea; }
+  .task-card.ok { border-left-color: var(--green); }
+  .task-info { min-width: 0; }
+  .task-name { font-weight: 700; font-size: 17px; margin-bottom: 4px; color: var(--black); }
+  .task-meta { font-size: 14px; color: var(--gray); }
+  .task-meta strong { color: var(--ink); }
+  .task-actions { display: flex; gap: var(--s2); flex-shrink: 0; }
+  @media (max-width: 600px) {
+    .task-card { grid-template-columns: 1fr; }
+    .task-actions { justify-content: flex-start; }
+  }
+
+  /* Temp log */
+  .temp-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--s3); margin-top: var(--s3);
+  }
+  .temp-card {
+    background: var(--white); border: 1px solid var(--line); border-radius: 8px;
+    padding: var(--s4); border-top: 3px solid var(--blue);
+  }
+  .temp-card.warn { border-top-color: var(--amber); }
+  .temp-card.alert { border-top-color: var(--red); background: #fdecea; }
+  .temp-card-name { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+  .temp-card-range { font-size: 13px; color: var(--gray); margin-bottom: var(--s3); }
+  .temp-input-row { display: flex; gap: var(--s2); align-items: center; }
+  .temp-input-row input { flex: 1; font-size: 18px; font-weight: 700; text-align: center; }
+  .temp-last {
+    font-size: 12px; color: var(--gray); margin-top: var(--s2);
+    padding-top: var(--s2); border-top: 1px solid var(--line);
+  }
+  .temp-last strong { color: var(--ink); }
+
+  .form-grid {
+    display: grid; grid-template-columns: 2fr 1fr 1fr;
+    gap: var(--s3);
+  }
+  @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+
+  .frequency-pills { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s2); }
+  .freq-pill {
+    padding: var(--s2) var(--s4); border: 2px solid var(--line); background: var(--white);
+    border-radius: 20px; font-size: 14px; cursor: pointer; min-height: 40px;
+    display: inline-flex; align-items: center;
+  }
+  .freq-pill:hover { border-color: var(--red); }
+  .freq-pill.active { background: var(--red); color: white; border-color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="header-back" href="index.html">← Home</a>
+  <div class="header-titles">
+    <div class="header-title">Maintenance</div>
+    <div class="header-sub">Equipment checks · Temperature logs · Scheduled service</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- DASHBOARD STATS -->
+  <div class="stat-grid">
+    <div class="stat alert">
+      <div class="stat-value" id="stat-overdue">0</div>
+      <div class="stat-label">Overdue Tasks</div>
+    </div>
+    <div class="stat warn">
+      <div class="stat-value" id="stat-due-soon">0</div>
+      <div class="stat-label">Due in 7 Days</div>
+    </div>
+    <div class="stat ok">
+      <div class="stat-value" id="stat-ok">0</div>
+      <div class="stat-label">On Schedule</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="stat-temps-today">0</div>
+      <div class="stat-label">Temps Logged Today</div>
+    </div>
+  </div>
+
+  <!-- SUB-TABS -->
+  <div class="subtabs">
+    <button class="subtab active" onclick="showSubtab('tasks', this)">📋 Tasks</button>
+    <button class="subtab" onclick="showSubtab('temps', this)">🌡️ Temp Logs</button>
+    <button class="subtab" onclick="showSubtab('history', this)">📜 Log History</button>
+    <button class="subtab" onclick="showSubtab('setup', this)">⚙️ Setup</button>
+  </div>
+
+  <!-- ============ TASKS ============ -->
+  <div id="tasks" class="subpanel active">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Scheduled Tasks</div>
+          <div class="card-subtitle">Tap "Done" when you complete a task — sets next-due automatically</div>
+        </div>
+        <div class="btn-row" style="margin:0;">
+          <button class="btn btn-primary" onclick="showAddTask()">+ Add Task</button>
+        </div>
+      </div>
+
+      <div class="chip-group" style="margin-bottom: var(--s4);">
+        <div class="chip active" data-filter="all" onclick="filterTasks(this, 'all')">All</div>
+        <div class="chip" data-filter="overdue" onclick="filterTasks(this, 'overdue')">⚠️ Overdue</div>
+        <div class="chip" data-filter="due-soon" onclick="filterTasks(this, 'due-soon')">🕒 Due Soon</div>
+        <div class="chip" data-filter="ok" onclick="filterTasks(this, 'ok')">✓ On Schedule</div>
+      </div>
+
+      <div id="taskList"></div>
+    </div>
+
+    <!-- ADD/EDIT TASK FORM -->
+    <div class="card" id="taskForm" style="display:none;">
+      <div class="card-header">
+        <div>
+          <div class="card-title" id="taskFormTitle">Add Task</div>
+        </div>
+      </div>
+      <input type="hidden" id="taskId" />
+
+      <label>Equipment / Area <span class="required">*</span></label>
+      <select id="taskEquipment">
+        <option value="">— Select equipment —</option>
+        <optgroup label="Refrigeration">
+          <option>Walk-in Refrigerator</option>
+          <option>Walk-in Freezer</option>
+          <option>Reach-in Refrigerator</option>
+          <option>Reach-in Freezer</option>
+          <option>Refrigerated Truck</option>
+        </optgroup>
+        <optgroup label="Vehicles">
+          <option>Distribution Truck</option>
+          <option>Pickup Truck</option>
+          <option>Van</option>
+        </optgroup>
+        <optgroup label="Facility">
+          <option>HVAC System</option>
+          <option>Building / Roof</option>
+          <option>Plumbing</option>
+          <option>Electrical</option>
+          <option>Restrooms</option>
+        </optgroup>
+        <optgroup label="Safety">
+          <option>Fire Extinguishers</option>
+          <option>Smoke / CO Detectors</option>
+          <option>First Aid Kit</option>
+          <option>Eyewash Station</option>
+          <option>Pest Control</option>
+        </optgroup>
+        <optgroup label="Other">
+          <option>Forklift / Pallet Jack</option>
+          <option>Generator</option>
+          <option>Cleaning Supplies</option>
+          <option>Other</option>
+        </optgroup>
+      </select>
+
+      <label>Task Description <span class="required">*</span></label>
+      <input type="text" id="taskName" placeholder="e.g., Change HVAC filter, Check fire extinguisher tag" />
+
+      <label>How often?</label>
+      <div class="frequency-pills" id="freqPills">
+        <div class="freq-pill" data-freq="daily" onclick="setFreq(this, 'daily')">Daily</div>
+        <div class="freq-pill" data-freq="weekly" onclick="setFreq(this, 'weekly')">Weekly</div>
+        <div class="freq-pill active" data-freq="monthly" onclick="setFreq(this, 'monthly')">Monthly</div>
+        <div class="freq-pill" data-freq="quarterly" onclick="setFreq(this, 'quarterly')">Quarterly</div>
+        <div class="freq-pill" data-freq="semi-annual" onclick="setFreq(this, 'semi-annual')">Every 6 months</div>
+        <div class="freq-pill" data-freq="annual" onclick="setFreq(this, 'annual')">Yearly</div>
+        <div class="freq-pill" data-freq="custom" onclick="setFreq(this, 'custom')">Custom days</div>
+      </div>
+      <input type="number" id="taskCustomDays" placeholder="Days between" style="display:none; margin-top:var(--s2);" min="1" />
+
+      <div class="form-grid">
+        <div>
+          <label>Last completed</label>
+          <input type="date" id="taskLastDone" />
+          <div class="help-text">Leave blank if never done</div>
+        </div>
+        <div>
+          <label>Assigned to</label>
+          <input type="text" id="taskAssigned" placeholder="Volunteer name" />
+        </div>
+        <div>
+          <label>Priority</label>
+          <select id="taskPriority">
+            <option value="normal">Normal</option>
+            <option value="critical">Critical (safety/compliance)</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Notes</label>
+      <input type="text" id="taskNotes" placeholder="e.g., Filter size 20x25x1, vendor contact, etc." />
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-large" onclick="saveTask()">💾 Save Task</button>
+        <button class="btn btn-neutral btn-large" onclick="hideAddTask()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TEMP LOGS ============ -->
+  <div id="temps" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Daily Temperature Log</div>
+          <div class="card-subtitle">Health inspectors love these. Walk around at opening and log each unit.</div>
+        </div>
+      </div>
+
+      <div class="notice notice-info">
+        💡 <strong>Safe ranges:</strong> Refrigerators 32–40°F · Freezers 0°F or below. Out-of-range readings will flag red — investigate before stocking with food.
+      </div>
+
+      <div class="temp-grid" id="tempGrid"></div>
+
+      <div style="margin-top: var(--s5);" class="btn-row">
+        <button class="btn btn-secondary" onclick="addTempUnit()">+ Add Refrigeration Unit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ LOG HISTORY ============ -->
+  <div id="history" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Completion Log</div>
+          <div class="card-subtitle">Every task completion and temp reading, last 90 days</div>
+        </div>
+        <div class="btn-row" style="margin:0;">
+          <button class="btn btn-neutral" onclick="exportLogCSV()">📊 Export CSV</button>
+          <button class="btn btn-neutral" onclick="window.print()">🖨️ Print</button>
+        </div>
+      </div>
+
+      <div class="chip-group" style="margin-bottom: var(--s4);">
+        <div class="chip active" data-logfilter="all" onclick="filterLog(this, 'all')">All</div>
+        <div class="chip" data-logfilter="tasks" onclick="filterLog(this, 'tasks')">Task completions</div>
+        <div class="chip" data-logfilter="temps" onclick="filterLog(this, 'temps')">Temp readings</div>
+        <div class="chip" data-logfilter="alerts" onclick="filterLog(this, 'alerts')">⚠️ Out-of-range only</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Type</th><th>Equipment</th><th>Detail</th><th>By</th></tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SETUP ============ -->
+  <div id="setup" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Setup & Starter Tasks</div>
+          <div class="card-subtitle">Pre-built task list based on food pantry best practices</div>
+        </div>
+      </div>
+
+      <div class="notice notice-warn">
+        ⚠️ Loading starter tasks <strong>adds them to your existing list</strong>. Run this once when setting up. After that, edit/delete tasks as needed.
+      </div>
+
+      <h3 class="subsection-title">Available Templates</h3>
+
+      <div style="display: grid; gap: var(--s3); margin-top: var(--s3);">
+        <div class="task-card">
+          <div class="task-info">
+            <div class="task-name">🍴 Food Pantry Essentials (recommended)</div>
+            <div class="task-meta">21 tasks · Daily temp checks, weekly cleaning, monthly fire/safety, quarterly HVAC, annual recerts</div>
+          </div>
+          <div class="task-actions">
+            <button class="btn btn-primary" onclick="loadTemplate('essentials')">Load</button>
+          </div>
+        </div>
+
+        <div class="task-card">
+          <div class="task-info">
+            <div class="task-name">🚚 Vehicle Maintenance</div>
+            <div class="task-meta">8 tasks · Truck oil, tires, brakes, registration, refrigeration unit checks</div>
+          </div>
+          <div class="task-actions">
+            <button class="btn btn-primary" onclick="loadTemplate('vehicles')">Load</button>
+          </div>
+        </div>
+
+        <div class="task-card">
+          <div class="task-info">
+            <div class="task-name">🏢 Warehouse Move-In (when ready)</div>
+            <div class="task-meta">9 tasks · Initial pest inspection, racking install check, dock seal, lighting, fire system</div>
+          </div>
+          <div class="task-actions">
+            <button class="btn btn-primary" onclick="loadTemplate('warehouse')">Load</button>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Refrigeration Units (for temp log)</h3>
+      <p class="muted" style="margin-bottom: var(--s3);">Add the fridges and freezers you check daily. The Temp Logs tab will show one card per unit.</p>
+      <div id="tempUnitList"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadDefaultTempUnits()">Load Default Units (Walk-in Fridge, Walk-in Freezer, Truck Reefer)</button>
+      </div>
+
+      <h3 class="subsection-title">Danger Zone</h3>
+      <p class="muted">Resetting clears all maintenance tasks, temp units, and completion log. Sign-in and inventory data are not affected.</p>
+      <div class="btn-row">
+        <button class="btn btn-danger" onclick="resetMaintenance()">⚠️ Reset All Maintenance Data</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ============ STORAGE ============
+const STORAGE_KEY = 'maricopa_pantry_v1';
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); }
+}
+function defaultData() {
+  return { signins: [], inventory: [], distributions: [], maintenance: [], maintenanceLog: [], tempUnits: [], tempReadings: [], volunteers: [], settings: {} };
+}
+function ensureKeys(d) {
+  d.maintenance = d.maintenance || [];
+  d.maintenanceLog = d.maintenanceLog || [];
+  d.tempUnits = d.tempUnits || [];
+  d.tempReadings = d.tempReadings || [];
+  return d;
+}
+function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){ showToast('Save failed', true); } }
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 2500);
+}
+function uuid() { return 'm-' + Date.now() + '-' + Math.random().toString(36).slice(2,7); }
+
+// ============ FREQUENCY HELPERS ============
+const freqDays = { daily: 1, weekly: 7, monthly: 30, quarterly: 91, 'semi-annual': 182, annual: 365 };
+
+function computeNextDue(lastDone, frequency, customDays) {
+  if (!lastDone) return null;
+  const last = new Date(lastDone + 'T12:00:00');
+  const days = frequency === 'custom' ? (parseInt(customDays) || 30) : freqDays[frequency];
+  if (!days) return null;
+  const next = new Date(last);
+  next.setDate(next.getDate() + days);
+  return next.toISOString().slice(0, 10);
+}
+
+function statusOf(nextDue) {
+  if (!nextDue) return 'never';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(nextDue + 'T12:00:00');
+  const days = Math.ceil((due - today) / 86400000);
+  if (days < 0) return 'overdue';
+  if (days <= 7) return 'due-soon';
+  return 'ok';
+}
+
+function statusLabel(status, nextDue) {
+  if (status === 'never') return '<span class="badge badge-gray">Never done</span>';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(nextDue + 'T12:00:00');
+  const days = Math.ceil((due - today) / 86400000);
+  if (status === 'overdue') return '<span class="badge badge-red">Overdue ' + Math.abs(days) + ' days</span>';
+  if (status === 'due-soon') return '<span class="badge badge-amber">Due in ' + days + ' days</span>';
+  return '<span class="badge badge-green">Due in ' + days + ' days</span>';
+}
+
+// ============ SUB-TABS ============
+function showSubtab(id, btn) {
+  document.querySelectorAll('.subpanel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'tasks') renderTasks();
+  if (id === 'temps') renderTempGrid();
+  if (id === 'history') renderHistory();
+  if (id === 'setup') renderTempUnitList();
+}
+
+// ============ TASKS ============
+let currentFilter = 'all';
+let currentFreq = 'monthly';
+
+function filterTasks(chip, filter) {
+  document.querySelectorAll('[data-filter]').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  currentFilter = filter;
+  renderTasks();
+}
+
+function renderTasks() {
+  const data = ensureKeys(loadData());
+  const list = document.getElementById('taskList');
+
+  // Compute status for all tasks
+  const tasks = data.maintenance.map(t => ({
+    ...t,
+    _status: statusOf(t.nextDue)
+  }));
+
+  // Filter
+  let filtered = tasks;
+  if (currentFilter !== 'all') filtered = tasks.filter(t => t._status === currentFilter || (currentFilter === 'overdue' && t._status === 'never'));
+
+  // Sort: overdue → due-soon → ok → never
+  const order = { 'overdue': 0, 'never': 1, 'due-soon': 2, 'ok': 3 };
+  filtered.sort((a,b) => (order[a._status] || 99) - (order[b._status] || 99));
+
+  // Update dashboard
+  document.getElementById('stat-overdue').textContent = tasks.filter(t => t._status === 'overdue' || t._status === 'never').length;
+  document.getElementById('stat-due-soon').textContent = tasks.filter(t => t._status === 'due-soon').length;
+  document.getElementById('stat-ok').textContent = tasks.filter(t => t._status === 'ok').length;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('stat-temps-today').textContent = data.tempReadings.filter(r => r.date === today).length;
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">✓</div>No tasks match this filter. Try "All" or load a template from Setup.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => {
+    const statusClass = t._status === 'overdue' || t._status === 'never' ? 'overdue' : t._status === 'due-soon' ? 'due-soon' : 'ok';
+    const freqLabel = t.frequency === 'custom' ? `every ${t.customDays} days` : t.frequency;
+    const priority = t.priority === 'critical' ? ' <span class="badge badge-red">CRITICAL</span>' : '';
+    return `<div class="task-card ${statusClass}">
+      <div class="task-info">
+        <div class="task-name">${escapeHtml(t.name)}${priority}</div>
+        <div class="task-meta">
+          <strong>${escapeHtml(t.equipment || '—')}</strong> · ${freqLabel}
+          ${t.lastDone ? ' · last done <strong>' + formatDate(t.lastDone) + '</strong>' : ''}
+          ${t.assigned ? ' · ' + escapeHtml(t.assigned) : ''}
+        </div>
+        <div style="margin-top: 6px;">${statusLabel(t._status, t.nextDue)}</div>
+        ${t.notes ? '<div class="task-meta" style="margin-top:4px; font-style:italic;">' + escapeHtml(t.notes) + '</div>' : ''}
+      </div>
+      <div class="task-actions">
+        <button class="btn btn-success" onclick="markDone('${t.id}')">✓ Done</button>
+        <button class="btn btn-neutral" onclick="editTask('${t.id}')">✎</button>
+        <button class="btn btn-neutral" onclick="deleteTask('${t.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showAddTask() {
+  document.getElementById('taskForm').style.display = '';
+  document.getElementById('taskFormTitle').textContent = 'Add Task';
+  document.getElementById('taskId').value = '';
+  document.getElementById('taskEquipment').value = '';
+  document.getElementById('taskName').value = '';
+  document.getElementById('taskLastDone').value = '';
+  document.getElementById('taskAssigned').value = '';
+  document.getElementById('taskNotes').value = '';
+  document.getElementById('taskPriority').value = 'normal';
+  document.getElementById('taskCustomDays').value = '';
+  document.getElementById('taskCustomDays').style.display = 'none';
+  currentFreq = 'monthly';
+  document.querySelectorAll('[data-freq]').forEach(p => p.classList.toggle('active', p.dataset.freq === 'monthly'));
+  document.getElementById('taskForm').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function hideAddTask() {
+  document.getElementById('taskForm').style.display = 'none';
+}
+
+function setFreq(pill, freq) {
+  document.querySelectorAll('[data-freq]').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  currentFreq = freq;
+  document.getElementById('taskCustomDays').style.display = freq === 'custom' ? '' : 'none';
+}
+
+function saveTask() {
+  const equipment = document.getElementById('taskEquipment').value;
+  const name = document.getElementById('taskName').value.trim();
+  if (!equipment) { showToast('Select equipment first', true); return; }
+  if (!name) { showToast('Task description required', true); return; }
+
+  const data = ensureKeys(loadData());
+  const id = document.getElementById('taskId').value || uuid();
+  const lastDone = document.getElementById('taskLastDone').value || '';
+  const customDays = document.getElementById('taskCustomDays').value || '';
+  const task = {
+    id: id,
+    equipment: equipment,
+    name: name,
+    frequency: currentFreq,
+    customDays: customDays,
+    lastDone: lastDone,
+    nextDue: computeNextDue(lastDone, currentFreq, customDays),
+    assigned: document.getElementById('taskAssigned').value.trim(),
+    priority: document.getElementById('taskPriority').value,
+    notes: document.getElementById('taskNotes').value.trim()
+  };
+
+  const existing = data.maintenance.findIndex(t => t.id === id);
+  if (existing >= 0) data.maintenance[existing] = task;
+  else data.maintenance.push(task);
+  saveData(data);
+
+  showToast('Task saved');
+  hideAddTask();
+  renderTasks();
+}
+
+function editTask(id) {
+  const data = ensureKeys(loadData());
+  const t = data.maintenance.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('taskForm').style.display = '';
+  document.getElementById('taskFormTitle').textContent = 'Edit Task';
+  document.getElementById('taskId').value = t.id;
+  document.getElementById('taskEquipment').value = t.equipment || '';
+  document.getElementById('taskName').value = t.name || '';
+  document.getElementById('taskLastDone').value = t.lastDone || '';
+  document.getElementById('taskAssigned').value = t.assigned || '';
+  document.getElementById('taskNotes').value = t.notes || '';
+  document.getElementById('taskPriority').value = t.priority || 'normal';
+  document.getElementById('taskCustomDays').value = t.customDays || '';
+  currentFreq = t.frequency || 'monthly';
+  document.querySelectorAll('[data-freq]').forEach(p => p.classList.toggle('active', p.dataset.freq === currentFreq));
+  document.getElementById('taskCustomDays').style.display = currentFreq === 'custom' ? '' : 'none';
+  document.getElementById('taskForm').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function deleteTask(id) {
+  if (!confirm('Delete this task? Completion log entries will remain.')) return;
+  const data = ensureKeys(loadData());
+  data.maintenance = data.maintenance.filter(t => t.id !== id);
+  saveData(data);
+  renderTasks();
+  showToast('Task deleted');
+}
+
+function markDone(id) {
+  const data = ensureKeys(loadData());
+  const t = data.maintenance.find(x => x.id === id);
+  if (!t) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const previousLast = t.lastDone;
+  t.lastDone = today;
+  t.nextDue = computeNextDue(today, t.frequency, t.customDays);
+  // Log it
+  data.maintenanceLog.push({
+    id: uuid(),
+    type: 'task',
+    taskId: t.id,
+    equipment: t.equipment,
+    name: t.name,
+    date: today,
+    timestamp: new Date().toISOString(),
+    by: t.assigned || 'volunteer',
+    previousLast: previousLast || ''
+  });
+  saveData(data);
+  showToast('✓ Done — next due ' + formatDate(t.nextDue));
+  renderTasks();
+}
+
+// ============ TEMPLATES ============
+const templates = {
+  essentials: [
+    { equipment: 'Walk-in Refrigerator', name: 'Check temp (open + midday)', frequency: 'daily', priority: 'critical' },
+    { equipment: 'Walk-in Freezer', name: 'Check temp (open + midday)', frequency: 'daily', priority: 'critical' },
+    { equipment: 'Reach-in Refrigerator', name: 'Check temp', frequency: 'daily', priority: 'critical' },
+    { equipment: 'Reach-in Freezer', name: 'Check temp', frequency: 'daily', priority: 'critical' },
+    { equipment: 'Restrooms', name: 'Restock and clean', frequency: 'daily' },
+    { equipment: 'Building / Roof', name: 'Floor sweep and mop common areas', frequency: 'weekly' },
+    { equipment: 'Walk-in Refrigerator', name: 'Deep clean — empty, scrub, sanitize', frequency: 'monthly', priority: 'critical' },
+    { equipment: 'Walk-in Freezer', name: 'Deep clean — defrost coils, check seals', frequency: 'monthly' },
+    { equipment: 'Pest Control', name: 'Monthly pest service visit', frequency: 'monthly', priority: 'critical' },
+    { equipment: 'Fire Extinguishers', name: 'Visual check — pressure gauge in green', frequency: 'monthly', priority: 'critical' },
+    { equipment: 'Smoke / CO Detectors', name: 'Test detector buttons', frequency: 'monthly', priority: 'critical' },
+    { equipment: 'First Aid Kit', name: 'Restock and check expirations', frequency: 'monthly' },
+    { equipment: 'HVAC System', name: 'Change filters', frequency: 'quarterly', notes: 'Note filter size when adding' },
+    { equipment: 'HVAC System', name: 'Professional HVAC service', frequency: 'semi-annual', priority: 'critical' },
+    { equipment: 'Building / Roof', name: 'Inspect roof for damage/leaks', frequency: 'semi-annual' },
+    { equipment: 'Fire Extinguishers', name: 'Annual professional inspection (signed tag)', frequency: 'annual', priority: 'critical' },
+    { equipment: 'Building / Roof', name: 'Gutter clean-out', frequency: 'annual' },
+    { equipment: 'Plumbing', name: 'Check for leaks, water heater service', frequency: 'annual' },
+    { equipment: 'Electrical', name: 'Visual panel inspection, GFCI test', frequency: 'annual', priority: 'critical' },
+    { equipment: 'Generator', name: 'Run test under load', frequency: 'quarterly' },
+    { equipment: 'Eyewash Station', name: 'Flush eyewash for 3 minutes', frequency: 'weekly', priority: 'critical' }
+  ],
+  vehicles: [
+    { equipment: 'Distribution Truck', name: 'Check tire pressure', frequency: 'weekly', priority: 'critical' },
+    { equipment: 'Distribution Truck', name: 'Oil change', frequency: 'custom', customDays: 90, notes: 'Or every 5,000 miles, whichever first' },
+    { equipment: 'Distribution Truck', name: 'Tire rotation', frequency: 'semi-annual' },
+    { equipment: 'Distribution Truck', name: 'Brake inspection', frequency: 'semi-annual', priority: 'critical' },
+    { equipment: 'Distribution Truck', name: 'Annual registration renewal', frequency: 'annual', priority: 'critical' },
+    { equipment: 'Distribution Truck', name: 'Annual safety inspection', frequency: 'annual', priority: 'critical' },
+    { equipment: 'Refrigerated Truck', name: 'Reefer pre-trip temp check', frequency: 'weekly', priority: 'critical' },
+    { equipment: 'Refrigerated Truck', name: 'Reefer professional service', frequency: 'semi-annual', priority: 'critical' }
+  ],
+  warehouse: [
+    { equipment: 'Pest Control', name: 'Initial pest inspection & treatment plan', frequency: 'custom', customDays: 365, priority: 'critical' },
+    { equipment: 'Building / Roof', name: 'Racking install certification check', frequency: 'annual', priority: 'critical' },
+    { equipment: 'Building / Roof', name: 'Loading dock seal inspection', frequency: 'quarterly' },
+    { equipment: 'Electrical', name: 'Warehouse lighting check', frequency: 'monthly' },
+    { equipment: 'Fire Extinguishers', name: 'Warehouse fire system inspection', frequency: 'annual', priority: 'critical' },
+    { equipment: 'Forklift / Pallet Jack', name: 'Daily pre-shift inspection', frequency: 'daily', priority: 'critical' },
+    { equipment: 'Forklift / Pallet Jack', name: 'Annual professional service', frequency: 'annual', priority: 'critical' },
+    { equipment: 'Building / Roof', name: 'Sprinkler head inspection (if applicable)', frequency: 'annual', priority: 'critical' },
+    { equipment: 'Building / Roof', name: 'Emergency exit path clear check', frequency: 'weekly', priority: 'critical' }
+  ]
+};
+
+function loadTemplate(key) {
+  const tpl = templates[key];
+  if (!tpl) return;
+  if (!confirm('Add ' + tpl.length + ' tasks from this template? Your existing tasks will remain.')) return;
+  const data = ensureKeys(loadData());
+  tpl.forEach(t => {
+    data.maintenance.push({
+      id: uuid(),
+      equipment: t.equipment,
+      name: t.name,
+      frequency: t.frequency,
+      customDays: t.customDays || '',
+      lastDone: '',
+      nextDue: null,
+      assigned: '',
+      priority: t.priority || 'normal',
+      notes: t.notes || ''
+    });
+  });
+  saveData(data);
+  showToast('Added ' + tpl.length + ' tasks');
+}
+
+// ============ TEMP UNITS & READINGS ============
+const defaultTempUnits = [
+  { id: 'walk-in-fridge', name: 'Walk-in Refrigerator', minF: 32, maxF: 40 },
+  { id: 'walk-in-freezer', name: 'Walk-in Freezer', minF: -10, maxF: 0 },
+  { id: 'truck-reefer', name: 'Truck Reefer', minF: 32, maxF: 40 }
+];
+
+function loadDefaultTempUnits() {
+  const data = ensureKeys(loadData());
+  defaultTempUnits.forEach(u => {
+    if (!data.tempUnits.find(x => x.id === u.id)) data.tempUnits.push({...u});
+  });
+  saveData(data);
+  renderTempUnitList();
+  showToast('Default units loaded');
+}
+
+function addTempUnit() {
+  const name = prompt('Unit name (e.g., "Reach-in Fridge #2"):');
+  if (!name) return;
+  const isFreezer = confirm('Is this a FREEZER? (Cancel for refrigerator)');
+  const data = ensureKeys(loadData());
+  data.tempUnits.push({
+    id: uuid(),
+    name: name,
+    minF: isFreezer ? -10 : 32,
+    maxF: isFreezer ? 0 : 40
+  });
+  saveData(data);
+  renderTempGrid();
+  renderTempUnitList();
+  showToast('Unit added');
+}
+
+function removeTempUnit(id) {
+  if (!confirm('Remove this unit from temp logging? Past readings will remain in history.')) return;
+  const data = ensureKeys(loadData());
+  data.tempUnits = data.tempUnits.filter(u => u.id !== id);
+  saveData(data);
+  renderTempUnitList();
+  renderTempGrid();
+}
+
+function renderTempUnitList() {
+  const data = ensureKeys(loadData());
+  const div = document.getElementById('tempUnitList');
+  if (!div) return;
+  if (data.tempUnits.length === 0) {
+    div.innerHTML = '<p class="muted" style="padding: var(--s3);">No refrigeration units yet. Load defaults or add custom ones.</p>';
+    return;
+  }
+  div.innerHTML = data.tempUnits.map(u => `
+    <div class="task-card">
+      <div class="task-info">
+        <div class="task-name">${escapeHtml(u.name)}</div>
+        <div class="task-meta">Safe range: ${u.minF}°F to ${u.maxF}°F</div>
+      </div>
+      <div class="task-actions">
+        <button class="btn btn-neutral" onclick="removeTempUnit('${u.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTempGrid() {
+  const data = ensureKeys(loadData());
+  const div = document.getElementById('tempGrid');
+  if (!div) return;
+  if (data.tempUnits.length === 0) {
+    div.innerHTML = '<div class="empty" style="grid-column: 1/-1;"><div class="empty-icon">🌡️</div>No refrigeration units yet. Go to Setup tab to add some.</div>';
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0,10);
+  div.innerHTML = data.tempUnits.map(u => {
+    const lastReading = [...data.tempReadings].filter(r => r.unitId === u.id).sort((a,b) => b.timestamp.localeCompare(a.timestamp))[0];
+    const lastF = lastReading ? lastReading.tempF : null;
+    let cardClass = '';
+    if (lastF !== null) {
+      if (lastF < u.minF || lastF > u.maxF) cardClass = 'alert';
+      else if (lastF < u.minF + 3 || lastF > u.maxF - 3) cardClass = 'warn';
+    }
+    const todayReading = data.tempReadings.find(r => r.unitId === u.id && r.date === today);
+    return `<div class="temp-card ${cardClass}">
+      <div class="temp-card-name">${escapeHtml(u.name)}</div>
+      <div class="temp-card-range">Safe: ${u.minF}°F to ${u.maxF}°F</div>
+      <div class="temp-input-row">
+        <input type="number" id="temp-${u.id}" placeholder="°F" step="0.1" value="${todayReading ? todayReading.tempF : ''}" />
+        <button class="btn btn-primary" onclick="logTemp('${u.id}')">Log</button>
+      </div>
+      <div class="temp-last">
+        ${lastReading
+          ? `Last: <strong>${lastReading.tempF}°F</strong> on ${formatDate(lastReading.date)} ${lastReading.time ? 'at ' + lastReading.time : ''}`
+          : 'No readings yet'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function logTemp(unitId) {
+  const data = ensureKeys(loadData());
+  const unit = data.tempUnits.find(u => u.id === unitId);
+  if (!unit) return;
+  const input = document.getElementById('temp-' + unitId);
+  const tempF = parseFloat(input.value);
+  if (isNaN(tempF)) { showToast('Enter a number first', true); return; }
+  const now = new Date();
+  const today = now.toISOString().slice(0,10);
+  // Remove any prior reading today for this unit (only one per day)
+  data.tempReadings = data.tempReadings.filter(r => !(r.unitId === unitId && r.date === today));
+  const outOfRange = tempF < unit.minF || tempF > unit.maxF;
+  data.tempReadings.push({
+    id: uuid(),
+    unitId: unitId,
+    unitName: unit.name,
+    tempF: tempF,
+    date: today,
+    time: now.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}),
+    timestamp: now.toISOString(),
+    outOfRange: outOfRange,
+    minF: unit.minF,
+    maxF: unit.maxF
+  });
+  saveData(data);
+  if (outOfRange) {
+    showToast('⚠️ ' + tempF + '°F is OUT OF RANGE for ' + unit.name, true);
+  } else {
+    showToast('Logged ' + tempF + '°F');
+  }
+  renderTempGrid();
+}
+
+// ============ HISTORY ============
+let currentLogFilter = 'all';
+function filterLog(chip, filter) {
+  document.querySelectorAll('[data-logfilter]').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  currentLogFilter = filter;
+  renderHistory();
+}
+
+function renderHistory() {
+  const data = ensureKeys(loadData());
+  const today = new Date();
+  const ninetyAgo = new Date(today); ninetyAgo.setDate(ninetyAgo.getDate() - 90);
+
+  // Combine task completions and temp readings into one timeline
+  let entries = [];
+  data.maintenanceLog.forEach(l => {
+    if (new Date(l.date) >= ninetyAgo) {
+      entries.push({
+        type: 'task',
+        date: l.date,
+        timestamp: l.timestamp,
+        equipment: l.equipment,
+        detail: l.name,
+        by: l.by || ''
+      });
+    }
+  });
+  data.tempReadings.forEach(r => {
+    if (new Date(r.date) >= ninetyAgo) {
+      entries.push({
+        type: r.outOfRange ? 'temp-alert' : 'temp',
+        date: r.date,
+        timestamp: r.timestamp,
+        equipment: r.unitName,
+        detail: r.tempF + '°F' + (r.outOfRange ? ' (OUT OF RANGE: ' + r.minF + '–' + r.maxF + ')' : ''),
+        by: ''
+      });
+    }
+  });
+
+  // Filter
+  if (currentLogFilter === 'tasks') entries = entries.filter(e => e.type === 'task');
+  if (currentLogFilter === 'temps') entries = entries.filter(e => e.type === 'temp' || e.type === 'temp-alert');
+  if (currentLogFilter === 'alerts') entries = entries.filter(e => e.type === 'temp-alert');
+
+  // Sort newest first
+  entries.sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+
+  const tbody = document.getElementById('historyBody');
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No log entries match this filter</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => {
+    const typeBadge = e.type === 'task' ? '<span class="badge badge-blue">Task</span>'
+      : e.type === 'temp-alert' ? '<span class="badge badge-red">⚠ Temp</span>'
+      : '<span class="badge badge-green">Temp</span>';
+    const rowClass = e.type === 'temp-alert' ? 'row-alert' : '';
+    return `<tr class="${rowClass}">
+      <td>${formatDate(e.date)}</td>
+      <td>${typeBadge}</td>
+      <td>${escapeHtml(e.equipment || '—')}</td>
+      <td>${escapeHtml(e.detail || '')}</td>
+      <td>${escapeHtml(e.by || '')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportLogCSV() {
+  const data = ensureKeys(loadData());
+  let csv = 'Date,Type,Equipment,Detail,By\n';
+  const all = [];
+  data.maintenanceLog.forEach(l => all.push({
+    date: l.date, type: 'Task completed', equipment: l.equipment, detail: l.name, by: l.by || '', timestamp: l.timestamp
+  }));
+  data.tempReadings.forEach(r => all.push({
+    date: r.date,
+    type: r.outOfRange ? 'TEMP ALERT' : 'Temperature',
+    equipment: r.unitName,
+    detail: r.tempF + 'F' + (r.outOfRange ? ' (out of range ' + r.minF + '-' + r.maxF + ')' : ''),
+    by: '',
+    timestamp: r.timestamp
+  }));
+  all.sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+  all.forEach(e => {
+    csv += `${e.date},"${e.type}","${e.equipment || ''}","${e.detail || ''}","${e.by || ''}"\n`;
+  });
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'maintenance_log_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============ RESET ============
+function resetMaintenance() {
+  if (!confirm('Reset all maintenance data (tasks, temp units, completion log)?\n\nSign-in and inventory data are NOT affected.')) return;
+  const data = ensureKeys(loadData());
+  data.maintenance = [];
+  data.maintenanceLog = [];
+  data.tempUnits = [];
+  data.tempReadings = [];
+  saveData(data);
+  renderTasks();
+  renderTempGrid();
+  renderTempUnitList();
+  renderHistory();
+  showToast('Maintenance data cleared');
+}
+
+// ============ UTILS ============
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDate(s) {
+  if (!s) return '—';
+  try {
+    return new Date(s + 'T12:00:00').toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
+  } catch(e) { return s; }
+}
+
+// ============ INIT ============
+renderTasks();
+renderTempGrid();
+renderTempUnitList();
+</script>
+
+</body>
+</html>
