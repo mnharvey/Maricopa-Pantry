@@ -134,7 +134,7 @@
         </div>
       </div>
 
-      <div class="notice notice-info" id="serverStatus">
+      <div class="notice notice-info" id="serverStatus" style="display:none;">
         Checking connection to the pantry server…
       </div>
 
@@ -430,16 +430,17 @@ async function checkServer() {
     const res = await fetch(PANTRY_SERVER + '/health');
     const data = await res.json();
     if (data.status === 'ok' && data.keyConfigured) {
-      el.className = 'notice notice-success';
-      el.innerHTML = '✓ Connected to the pantry server. No API key needed — just add photos and scan.';
+      el.style.display = 'none';
     } else if (data.status === 'ok' && !data.keyConfigured) {
       el.className = 'notice notice-warn';
+      el.style.display = '';
       el.innerHTML = '⚠️ Server is running but the API key is not set. Tell your admin to set PANTRY_ANTHROPIC_KEY.';
     } else {
       throw new Error('unexpected');
     }
   } catch (e) {
     el.className = 'notice notice-error';
+    el.style.display = '';
     el.innerHTML = '❌ Cannot reach the pantry server. Scanning will not work until it is online. (Sign-in by hand still works.)';
   }
 }
