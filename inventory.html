@@ -62,7 +62,7 @@
   <a class="header-back" href="index.html">← Home</a>
   <div class="header-titles">
     <div class="header-title">Inventory</div>
-    <div class="header-sub">Stock · Intake (lbs in) · Waste · Food-flow</div>
+    <div class="header-sub">Stock · Intake (lbs in) · Waste · Food-flow &nbsp; <span id="syncStatus" style="font-weight:600;"></span></div>
   </div>
 </div>
 
@@ -469,6 +469,7 @@
 
 <script>
 // ============ STORAGE ============
+const PANTRY_SERVER = 'https://api.little6llc.com:3001/pantry';
 const STORAGE_KEY = 'maricopa_pantry_v1';
 const AVG_BOX_WEIGHT = 25;       // lbs per distribution box (editable assumption)
 const VALUE_PER_LB = 1.93;       // Feeding America avg meal value per lb
@@ -480,7 +481,63 @@ function ensureKeys(d) {
   d.signins = d.signins || []; d.distributions = d.distributions || [];
   return d;
 }
-function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){ showToast('Save failed', true); } }
+function saveData(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){ showToast('Save failed', true); }
+  pushToServer(d);  // also sync inventory/intake/waste to the server
+}
+
+// Push the three inventory arrays to the server (fire-and-forget)
+let pushTimer = null;
+function pushToServer(d) {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    try {
+      await fetch(PANTRY_SERVER + '/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inventory: d.inventory || [], intake: d.intake || [], waste: d.waste || [] })
+      });
+      setSyncStatus('saved');
+    } catch (e) {
+      setSyncStatus('offline');
+    }
+  }, 600);  // debounce rapid edits
+}
+
+// Pull inventory data from server on load, merge into local store
+async function pullFromServer() {
+  try {
+    const res = await fetch(PANTRY_SERVER + '/data');
+    if (!res.ok) throw new Error('server');
+    const serverData = await res.json();
+    const local = ensureKeys(loadData());
+    // Server is the source of truth for these three arrays
+    local.inventory = serverData.inventory || [];
+    local.intake = serverData.intake || [];
+    local.waste = serverData.waste || [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+    setSyncStatus('saved');
+    return true;
+  } catch (e) {
+    setSyncStatus('offline');
+    return false;
+  }
+}
+
+function setSyncStatus(state) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (state === 'saved') {
+    el.textContent = '☁️ Saved to server';
+    el.style.color = 'var(--green)';
+  } else if (state === 'offline') {
+    el.textContent = '⚠️ Working offline — changes saved on this device only';
+    el.style.color = 'var(--amber)';
+  } else if (state === 'saving') {
+    el.textContent = '☁️ Saving…';
+    el.style.color = 'var(--gray)';
+  }
+}
 function showToast(msg, isErr) {
   const t = document.getElementById('toast'); t.textContent = msg;
   t.className = 'toast show' + (isErr ? ' error' : '');
@@ -861,8 +918,19 @@ document.getElementById('wDate').valueAsDate = new Date();
   document.getElementById('repTo').valueAsDate = now;
 })();
 updateWasteEstimate();
+
+// Pull from server first, then render everything with fresh data
+setSyncStatus('saving');
+pullFromServer().then(() => {
+  renderStock();
+  renderFlow();
+  renderIntake();
+  renderWaste();
+});
+// Render immediately too (offline-friendly) so the page isn't blank while loading
 renderStock();
 renderFlow();
+
 </script>
 
 </body>
