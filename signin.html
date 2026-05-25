@@ -134,12 +134,9 @@
         </div>
       </div>
 
-      <div class="notice notice-warn">
-        ⚠️ <strong>API key required.</strong> Paste your Anthropic API key — same key as Grant Writing. Stored only in this browser session, never sent anywhere except Anthropic.
+      <div class="notice notice-info" id="serverStatus">
+        Checking connection to the pantry server…
       </div>
-
-      <label>Anthropic API key</label>
-      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" />
 
       <label>Photos of paper sheets</label>
       <div class="scan-drop" onclick="document.getElementById('scanInput').click()">
@@ -268,6 +265,13 @@
 <div id="toast" class="toast"></div>
 
 <script>
+// ============================================================
+//  SERVER CONFIG — change this one line if your URL differs.
+//  Once your Lightsail proxy forwards /pantry/* over HTTPS,
+//  this is the only setting that matters.
+// ============================================================
+const PANTRY_SERVER = 'https://api.little6llc.com:3001/pantry';
+
 const STORAGE_KEY = 'maricopa_pantry_v1';
 function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); } }
 function defaultData() { return { signins: [], inventory: [], distributions: [], maintenance: [], volunteers: [], settings: {language: 'en'} }; }
@@ -386,8 +390,6 @@ async function fileToBase64(file) {
 }
 
 async function runScan() {
-  const apiKey = document.getElementById('apiKey').value.trim();
-  if (!apiKey) { showToast('Paste API key first', true); return; }
   if (scanFiles.length === 0) { showToast('Add photos first', true); return; }
 
   const btn = document.getElementById('scanBtn');
@@ -398,79 +400,47 @@ async function runScan() {
   result.innerHTML = '<div class="notice notice-info">Reading sheets — this can take 15-30 seconds per page. Please wait...</div>';
 
   try {
-    const imageBlocks = await Promise.all(scanFiles.map(async f => ({
-      type: 'image',
-      source: { type: 'base64', media_type: f.type, data: await fileToBase64(f) }
+    const images = await Promise.all(scanFiles.map(async f => ({
+      media_type: f.type,
+      data: await fileToBase64(f)
     })));
 
-    const prompt = `These are photographs of paper "Distribution Sign-In Sheets" used by Maricopa Pantry (a St. Mary's Food Bank Alliance partner agency).
-
-The form columns are: Row Number | Client Signature | City/Zip Code | Total Persons (# de Personas) | Boxes
-
-IMPORTANT PRIVACY RULES:
-- DO NOT read, transcribe, or extract anything from the "Client Signature / Firma de Cliente" column. Skip it entirely.
-- ONLY extract: row number, city/zip, total persons (household size), and boxes given.
-- DO NOT extract names from anywhere on the sheet.
-
-For each photo (each sheet), try to read:
-- The "Date:" field at the top right of the sheet
-- Each numbered row that has data filled in. Skip blank rows.
-
-Return ONLY a valid JSON object with this exact structure (no preamble, no markdown fences):
-{
-  "sheets": [
-    {
-      "sheet_number": 1,
-      "date_on_sheet": "YYYY-MM-DD or empty if unreadable",
-      "rows": [
-        {"row": 1, "zip": "85138", "persons": 4, "boxes": 1, "confidence": "high"}
-      ],
-      "households_on_sheet": 0,
-      "people_on_sheet": 0,
-      "boxes_on_sheet": 0,
-      "warnings": ""
-    }
-  ],
-  "summary": {
-    "total_households": 0,
-    "total_people": 0,
-    "total_boxes": 0,
-    "overall_confidence": "high",
-    "warnings": ""
-  }
-}
-
-- confidence values are: "high", "medium", or "low"
-- If a cell is unreadable, set field to null and confidence to "low"
-- persons must be 1-15. boxes usually 1-4. Flag outliers as "low"
-- If you cannot read the date, leave date_on_sheet empty`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(PANTRY_SERVER + '/scan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: prompt }] }]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images: images })
     });
 
-    const apiData = await response.json();
-    if (apiData.error) throw new Error(apiData.error.message);
-    const text = apiData.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
-    const cleaned = text.replace(/^```json|```$/g, '').replace(/^```|```$/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    const parsed = await response.json();
+    if (parsed.error) throw new Error(parsed.error);
     renderScanResult(parsed);
   } catch (err) {
-    result.innerHTML = '<div class="notice notice-error">❌ Scan failed: ' + (err.message || 'Unknown error') + '<br><br>If the error mentions JSON parsing, try re-shooting the photos with better lighting and contrast.</div>';
+    result.innerHTML = '<div class="notice notice-error">❌ Scan failed: ' + (err.message || 'Unknown error') + '<br><br>If this mentions "Failed to fetch" or connection, the pantry server may be down or the address is wrong. Check with your admin.</div>';
   } finally {
     btn.disabled = false;
     btn.innerHTML = '🔍 Scan & Count';
+  }
+}
+
+// Check server health on load and show status
+async function checkServer() {
+  const el = document.getElementById('serverStatus');
+  if (!el) return;
+  try {
+    const res = await fetch(PANTRY_SERVER + '/health');
+    const data = await res.json();
+    if (data.status === 'ok' && data.keyConfigured) {
+      el.className = 'notice notice-success';
+      el.innerHTML = '✓ Connected to the pantry server. No API key needed — just add photos and scan.';
+    } else if (data.status === 'ok' && !data.keyConfigured) {
+      el.className = 'notice notice-warn';
+      el.innerHTML = '⚠️ Server is running but the API key is not set. Tell your admin to set PANTRY_ANTHROPIC_KEY.';
+    } else {
+      throw new Error('unexpected');
+    }
+  } catch (e) {
+    el.className = 'notice notice-error';
+    el.innerHTML = '❌ Cannot reach the pantry server. Scanning will not work until it is online. (Sign-in by hand still works.)';
   }
 }
 
@@ -675,6 +645,7 @@ if (initData.settings && initData.settings.language) setLang(initData.settings.l
 document.getElementById('scanDate').valueAsDate = new Date();
 renderTodayReport();
 renderHistory();
+checkServer();
 </script>
 
 </body>
