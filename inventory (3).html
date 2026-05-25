@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inventory · Maricopa Pantry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="pantry.css" />
+<style>
+  .subtabs {
+    display: flex; gap: 0; background: var(--white);
+    border: 1px solid var(--line); border-radius: 8px;
+    overflow: hidden; margin-bottom: var(--s5);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); flex-wrap: wrap;
+  }
+  .subtab {
+    flex: 1; padding: var(--s4); border: none; background: var(--white);
+    font-family: inherit; font-size: var(--font-body); font-weight: 600;
+    color: var(--gray); cursor: pointer; min-height: var(--tap-min);
+    border-bottom: 3px solid transparent; min-width: 120px;
+  }
+  .subtab:hover { background: var(--cream); }
+  .subtab.active { color: var(--red); border-bottom-color: var(--red); background: var(--red-soft); }
+  @media (max-width: 600px) { .subtab { font-size: 14px; padding: var(--s3); } }
+  .subpanel { display: none; }
+  .subpanel.active { display: block; }
+
+  .filter-bar { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; margin-bottom: var(--s4); }
+  .filter-bar input[type="search"] { flex: 1; min-width: 200px; }
+
+  .flow-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--s3); margin-bottom: var(--s4);
+  }
+  .flow-box {
+    background: var(--white); border: 1px solid var(--line); border-radius: 8px;
+    padding: var(--s4); text-align: center;
+  }
+  .flow-box .num { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 700; line-height: 1; }
+  .flow-box .lbl { font-size: 13px; color: var(--gray); margin-top: 4px; }
+  .flow-box.in { border-top: 3px solid var(--green); }
+  .flow-box.out { border-top: 3px solid var(--blue); }
+  .flow-box.waste { border-top: 3px solid var(--red); }
+  .flow-box.bal { border-top: 3px solid var(--gold); }
+  .flow-arrow { display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--gray); }
+  @media (max-width: 600px) { .flow-arrow { display: none; } }
+
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s3); }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  @media (max-width: 700px) { .form-grid-3, .form-grid-2 { grid-template-columns: 1fr; } }
+
+  .row-expired td { background: #fdecea; }
+  .row-soon td { background: #fdf4e3; }
+  .est-badge { font-size: 11px; background: var(--amber-soft); color: var(--amber); padding: 2px 6px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="header-back" href="index.html">← Home</a>
+  <div class="header-titles">
+    <div class="header-title">Inventory</div>
+    <div class="header-sub">Stock · Intake (lbs in) · Waste · Food-flow</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- FOOD FLOW DASHBOARD -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Food Flow</div>
+        <div class="card-subtitle" id="flowPeriodLabel">This month</div>
+      </div>
+      <select id="flowPeriod" onchange="renderFlow()" style="width:auto;">
+        <option value="month">This month</option>
+        <option value="ytd">Year to date</option>
+        <option value="all">All time</option>
+      </select>
+    </div>
+    <div class="flow-row">
+      <div class="flow-box in"><div class="num" id="flow-in" style="color:var(--green);">0</div><div class="lbl">Pounds In</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box out"><div class="num" id="flow-out" style="color:var(--blue);">0</div><div class="lbl">Pounds Distributed</div></div>
+      <div class="flow-arrow">−</div>
+      <div class="flow-box waste"><div class="num" id="flow-waste" style="color:var(--red);">0</div><div class="lbl">Pounds Wasted</div></div>
+      <div class="flow-arrow">=</div>
+      <div class="flow-box bal"><div class="num" id="flow-bal" style="color:var(--gold);">0</div><div class="lbl">Est. On Hand</div></div>
+    </div>
+    <div class="notice notice-info" style="margin-bottom:0;">
+      <strong>Waste rate: <span id="flow-wasterate">0%</span></strong> of intake. Distributed pounds come from the Sign-In tool (boxes × avg box weight) plus any manual distribution entries. Funders ask for these numbers.
+    </div>
+  </div>
+
+  <!-- SUB-TABS -->
+  <div class="subtabs">
+    <button class="subtab active" onclick="showSubtab('stock', this)">📦 Stock</button>
+    <button class="subtab" onclick="showSubtab('intake', this)">📥 Intake (lbs in)</button>
+    <button class="subtab" onclick="showSubtab('waste', this)">🗑️ Waste</button>
+    <button class="subtab" onclick="showSubtab('reports', this)">📊 Reports</button>
+  </div>
+
+  <!-- ============ STOCK ============ -->
+  <div id="stock" class="subpanel active">
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-value" id="stat-items">0</div><div class="stat-label">Stock Items</div></div>
+      <div class="stat alert"><div class="stat-value" id="stat-expired">0</div><div class="stat-label">Expired</div></div>
+      <div class="stat warn"><div class="stat-value" id="stat-soon">0</div><div class="stat-label">Expiring ≤14 days</div></div>
+      <div class="stat warn"><div class="stat-value" id="stat-low">0</div><div class="stat-label">Below Reorder</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Add / Update Stock Item</div>
+        <div class="card-subtitle">Track what's physically on the shelf. For total pounds received, use the Intake tab.</div></div>
+      </div>
+      <input type="hidden" id="editId" />
+
+      <div class="form-grid-2">
+        <div>
+          <label>Item name <span class="required">*</span></label>
+          <input type="text" id="invName" placeholder="Canned corn 15oz / HVAC filter / Distribution box" />
+        </div>
+        <div>
+          <label>Category <span class="required">*</span></label>
+          <select id="invCategory">
+            <option value="food">🥫 Food</option>
+            <option value="parts">🔧 Equipment Parts</option>
+            <option value="supplies">📦 Distribution Supplies</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid-3">
+        <div>
+          <label>Quantity <span class="required">*</span></label>
+          <input type="number" id="invQty" min="0" step="0.5" placeholder="0" />
+        </div>
+        <div>
+          <label>Unit</label>
+          <select id="invUnit">
+            <option value="case">Case</option>
+            <option value="gaylord">Gaylord</option>
+            <option value="pallet">Pallet</option>
+            <option value="box">Box</option>
+            <option value="each">Each</option>
+            <option value="lb">Pounds</option>
+            <option value="bag">Bag</option>
+          </select>
+        </div>
+        <div>
+          <label>Reorder below</label>
+          <input type="number" id="invReorder" min="0" placeholder="optional" />
+        </div>
+      </div>
+
+      <div class="form-grid-3">
+        <div>
+          <label>Expiration date</label>
+          <input type="date" id="invExp" />
+          <div class="help-text">Food items: FIFO sorted by this</div>
+        </div>
+        <div>
+          <label>Location</label>
+          <select id="invLocation">
+            <option value="">— Select —</option>
+            <option>Dry Storage / Shelves</option>
+            <option>Walk-in Refrigerator</option>
+            <option>Walk-in Freezer</option>
+            <option>Reach-in Fridge</option>
+            <option>Reach-in Freezer</option>
+            <option>In the Truck</option>
+            <option>Parts Bin / Workshop</option>
+            <option>Supply Closet</option>
+            <option>Warehouse</option>
+          </select>
+        </div>
+        <div>
+          <label>Source</label>
+          <select id="invSource">
+            <option value="">— Select —</option>
+            <option>St. Mary's</option>
+            <option>Midwest Food Bank</option>
+            <option>City of Mesa</option>
+            <option>Community donation</option>
+            <option>Purchased</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Notes</label>
+      <input type="text" id="invNotes" placeholder="Lot number, batch, anything worth remembering" />
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-large" onclick="saveItem()">💾 Save Item</button>
+        <button class="btn btn-neutral btn-large" onclick="clearStockForm()">Clear</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Current Stock</div><div class="card-subtitle">FIFO — soonest expiration first</div></div>
+        <button class="btn btn-neutral" onclick="exportStockCSV()">📊 CSV</button>
+      </div>
+      <div class="filter-bar">
+        <input type="search" id="searchBox" placeholder="🔍 Search name, source, location..." oninput="renderStock()" />
+        <div class="chip-group" style="margin:0;">
+          <div class="chip active" data-filter="all" onclick="setStockFilter(this,'all')">All</div>
+          <div class="chip" data-filter="food" onclick="setStockFilter(this,'food')">🥫 Food</div>
+          <div class="chip" data-filter="parts" onclick="setStockFilter(this,'parts')">🔧 Parts</div>
+          <div class="chip" data-filter="supplies" onclick="setStockFilter(this,'supplies')">📦 Supplies</div>
+          <div class="chip" data-filter="expiring" onclick="setStockFilter(this,'expiring')">⚠️ Expiring</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Qty</th><th>Unit</th><th>Expires</th><th>Location</th><th>Source</th><th></th></tr></thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INTAKE ============ -->
+  <div id="intake" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Log Intake — Pounds In</div>
+        <div class="card-subtitle">Every time food arrives. Tag the source so you can report back to St. Mary's, Midwest, and Mesa.</div></div>
+      </div>
+
+      <div class="form-grid-3">
+        <div>
+          <label>Date <span class="required">*</span></label>
+          <input type="date" id="inDate" />
+        </div>
+        <div>
+          <label>Source <span class="required">*</span></label>
+          <select id="inSource">
+            <option value="">— Select —</option>
+            <option>St. Mary's</option>
+            <option>Midwest Food Bank</option>
+            <option>City of Mesa</option>
+            <option>Community donation</option>
+            <option>Purchased</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label>Total pounds <span class="required">*</span></label>
+          <input type="number" id="inPounds" min="0" step="1" placeholder="0" />
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div>
+          <label>How was poundage determined?</label>
+          <select id="inMethod">
+            <option value="scale">Weighed on scale</option>
+            <option value="receipt">From source's receipt/manifest</option>
+            <option value="estimate">Estimated (cases × avg weight)</option>
+          </select>
+        </div>
+        <div>
+          <label>Food type (optional)</label>
+          <select id="inType">
+            <option value="">— Mixed / not specified —</option>
+            <option>Dry / shelf-stable</option>
+            <option>Refrigerated</option>
+            <option>Frozen</option>
+            <option>Produce</option>
+            <option>Bakery</option>
+            <option>Non-food</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div>
+          <label>Reference # (optional)</label>
+          <input type="text" id="inRef" placeholder="Manifest #, invoice #" />
+        </div>
+        <div>
+          <label>Estimated value $ (optional)</label>
+          <input type="number" id="inValue" min="0" step="0.01" placeholder="for grant match" />
+          <div class="help-text">Or leave blank to auto-estimate at $1.93/lb (Feeding America avg)</div>
+        </div>
+      </div>
+
+      <label>Notes</label>
+      <input type="text" id="inNotes" placeholder="e.g., 3 pallets mixed canned, 1 Gaylord produce" />
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-large" onclick="saveIntake()">💾 Log Intake</button>
+        <button class="btn btn-neutral btn-large" onclick="clearIntakeForm()">Clear</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Intake Log</div></div>
+        <button class="btn btn-neutral" onclick="exportIntakeCSV()">📊 CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Source</th><th>Pounds</th><th>Method</th><th>Type</th><th>Value</th><th></th></tr></thead>
+          <tbody id="intakeBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WASTE ============ -->
+  <div id="waste" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Log Waste / Spoilage</div>
+        <div class="card-subtitle">Estimate by volume — the tool converts to pounds. Tag the source in case it's commodity food.</div></div>
+      </div>
+
+      <div class="notice notice-warn">
+        ⚠️ <strong>TEFAP / commodity note:</strong> If the wasted food came from USDA commodity (TEFAP) sources, you may need your food bank's approval before disposal unless it's an immediate safety hazard. The tool keeps the record — you make the compliance call.
+      </div>
+
+      <div class="form-grid-3">
+        <div>
+          <label>Date <span class="required">*</span></label>
+          <input type="date" id="wDate" />
+        </div>
+        <div>
+          <label>Estimate by</label>
+          <select id="wMethod" onchange="updateWasteEstimate()">
+            <option value="volume">Volume (Gaylord / pallet / etc.)</option>
+            <option value="pounds">Direct pounds</option>
+          </select>
+        </div>
+        <div>
+          <label>Source (optional)</label>
+          <select id="wSource">
+            <option value="">— Unknown / mixed —</option>
+            <option>St. Mary's</option>
+            <option>Midwest Food Bank</option>
+            <option>City of Mesa</option>
+            <option>Community donation</option>
+            <option>Purchased</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Volume estimator -->
+      <div id="volumeBlock">
+        <div class="form-grid-3">
+          <div>
+            <label>Container / amount</label>
+            <select id="wContainer" onchange="updateWasteEstimate()">
+              <option value="full-pallet">Full pallet (40×48, ~30" food)</option>
+              <option value="half-pallet">Half pallet</option>
+              <option value="full-gaylord">Full Gaylord</option>
+              <option value="half-gaylord">Half Gaylord</option>
+              <option value="full-box">Distribution box (16×22×9)</option>
+              <option value="milk-crate">Milk crate (13×18×10)</option>
+              <option value="case">Single case (~20 lb)</option>
+            </select>
+          </div>
+          <div>
+            <label>How many?</label>
+            <input type="number" id="wCount" min="0" step="0.5" value="1" oninput="updateWasteEstimate()" />
+          </div>
+          <div>
+            <label>Food density</label>
+            <select id="wDensity" onchange="updateWasteEstimate()">
+              <option value="light">Light (chips, bread, cereal)</option>
+              <option value="medium" selected>Medium (mixed, boxed)</option>
+              <option value="heavy">Heavy (canned, liquids)</option>
+            </select>
+          </div>
+        </div>
+        <div class="notice notice-info">
+          Estimated weight: <strong id="wEstimate">0 lbs</strong> <span class="est-badge">ESTIMATE</span>
+        </div>
+      </div>
+
+      <!-- Direct pounds -->
+      <div id="poundsBlock" style="display:none;">
+        <label>Pounds wasted</label>
+        <input type="number" id="wPounds" min="0" step="1" placeholder="0" />
+      </div>
+
+      <div class="form-grid-2">
+        <div>
+          <label>Reason <span class="required">*</span></label>
+          <select id="wReason">
+            <option value="expired">Expired</option>
+            <option value="spoiled">Spoiled / damaged</option>
+            <option value="recall">Recall</option>
+            <option value="temp-loss">Temperature loss (equipment fail)</option>
+            <option value="pest">Pest / contamination</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label>Food type (optional)</label>
+          <select id="wType">
+            <option value="">— Mixed —</option>
+            <option>Dry / shelf-stable</option>
+            <option>Refrigerated</option>
+            <option>Frozen</option>
+            <option>Produce</option>
+            <option>Bakery</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Notes</label>
+      <input type="text" id="wNotes" placeholder="What happened, what was disposed" />
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-large" onclick="saveWaste()">💾 Log Waste</button>
+        <button class="btn btn-neutral btn-large" onclick="clearWasteForm()">Clear</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Waste Log</div></div>
+        <button class="btn btn-neutral" onclick="exportWasteCSV()">📊 CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Pounds</th><th>Reason</th><th>Source</th><th>Type</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="wasteBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ REPORTS ============ -->
+  <div id="reports" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Source Report</div>
+        <div class="card-subtitle">Pounds received per source — what each food bank wants back</div></div>
+      </div>
+      <div class="form-grid-2">
+        <div>
+          <label>From</label>
+          <input type="date" id="repFrom" />
+        </div>
+        <div>
+          <label>To</label>
+          <input type="date" id="repTo" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-large" onclick="runReport()">📊 Run Report</button>
+        <button class="btn btn-neutral" onclick="window.print()">🖨️ Print</button>
+      </div>
+      <div id="reportOutput" style="margin-top: var(--s5);"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ============ STORAGE ============
+const STORAGE_KEY = 'maricopa_pantry_v1';
+const AVG_BOX_WEIGHT = 25;       // lbs per distribution box (editable assumption)
+const VALUE_PER_LB = 1.93;       // Feeding America avg meal value per lb
+
+function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); } }
+function defaultData() { return { signins: [], inventory: [], intake: [], waste: [], distributions: [], maintenance: [], maintenanceLog: [], tempUnits: [], tempReadings: [], volunteers: [], settings: {} }; }
+function ensureKeys(d) {
+  d.inventory = d.inventory || []; d.intake = d.intake || []; d.waste = d.waste || [];
+  d.signins = d.signins || []; d.distributions = d.distributions || [];
+  return d;
+}
+function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){ showToast('Save failed', true); } }
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 2500);
+}
+function uuid() { return 'i-' + Date.now() + '-' + Math.random().toString(36).slice(2,7); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(s){ if(!s) return '—'; try { return new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch(e){ return s; } }
+
+// ============ VOLUME → POUNDS ============
+// Base volume weights at MEDIUM density, then scaled.
+const containerBaseLbs = {
+  'full-pallet': 1000, 'half-pallet': 500,
+  'full-gaylord': 700, 'half-gaylord': 350,
+  'full-box': 25, 'milk-crate': 20, 'case': 20
+};
+const densityMult = { light: 0.6, medium: 1.0, heavy: 1.5 };
+
+function updateWasteEstimate() {
+  const method = document.getElementById('wMethod').value;
+  document.getElementById('volumeBlock').style.display = method === 'volume' ? '' : 'none';
+  document.getElementById('poundsBlock').style.display = method === 'pounds' ? '' : 'none';
+  if (method === 'volume') {
+    const base = containerBaseLbs[document.getElementById('wContainer').value] || 0;
+    const count = parseFloat(document.getElementById('wCount').value) || 0;
+    const mult = densityMult[document.getElementById('wDensity').value] || 1;
+    const est = Math.round(base * count * mult);
+    document.getElementById('wEstimate').textContent = est + ' lbs';
+  }
+}
+
+// ============ SUB-TABS ============
+function showSubtab(id, btn) {
+  document.querySelectorAll('.subpanel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'stock') renderStock();
+  if (id === 'intake') renderIntake();
+  if (id === 'waste') renderWaste();
+}
+
+// ============ STOCK ============
+let stockFilter = 'all';
+function setStockFilter(chip, f) {
+  document.querySelectorAll('[data-filter]').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active'); stockFilter = f; renderStock();
+}
+function saveItem() {
+  const name = document.getElementById('invName').value.trim();
+  const qty = document.getElementById('invQty').value;
+  if (!name) { showToast('Item name required', true); return; }
+  if (qty === '') { showToast('Quantity required', true); return; }
+  const data = ensureKeys(loadData());
+  const id = document.getElementById('editId').value || uuid();
+  const item = {
+    id, name,
+    category: document.getElementById('invCategory').value,
+    qty: parseFloat(qty) || 0,
+    unit: document.getElementById('invUnit').value,
+    reorder: parseFloat(document.getElementById('invReorder').value) || 0,
+    expDate: document.getElementById('invExp').value || '',
+    location: document.getElementById('invLocation').value || '',
+    source: document.getElementById('invSource').value || '',
+    notes: document.getElementById('invNotes').value.trim()
+  };
+  const ex = data.inventory.findIndex(x => x.id === id);
+  if (ex >= 0) data.inventory[ex] = item; else data.inventory.push(item);
+  saveData(data);
+  showToast('Item saved'); clearStockForm(); renderStock();
+}
+function clearStockForm() {
+  document.getElementById('editId').value = '';
+  ['invName','invQty','invReorder','invExp','invNotes'].forEach(i => document.getElementById(i).value='');
+  document.getElementById('invCategory').selectedIndex = 0;
+  document.getElementById('invUnit').selectedIndex = 0;
+  document.getElementById('invLocation').selectedIndex = 0;
+  document.getElementById('invSource').selectedIndex = 0;
+}
+function editItem(id) {
+  const data = ensureKeys(loadData());
+  const it = data.inventory.find(x => x.id === id); if (!it) return;
+  document.getElementById('editId').value = it.id;
+  document.getElementById('invName').value = it.name || '';
+  document.getElementById('invCategory').value = it.category || 'food';
+  document.getElementById('invQty').value = it.qty;
+  document.getElementById('invUnit').value = it.unit || 'case';
+  document.getElementById('invReorder').value = it.reorder || '';
+  document.getElementById('invExp').value = it.expDate || '';
+  document.getElementById('invLocation').value = it.location || '';
+  document.getElementById('invSource').value = it.source || '';
+  document.getElementById('invNotes').value = it.notes || '';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  const data = ensureKeys(loadData());
+  data.inventory = data.inventory.filter(x => x.id !== id);
+  saveData(data); renderStock();
+}
+function renderStock() {
+  const data = ensureKeys(loadData());
+  const today = new Date(); today.setHours(0,0,0,0);
+  const soon = new Date(today); soon.setDate(soon.getDate()+14);
+  const q = (document.getElementById('searchBox').value || '').toLowerCase();
+
+  let items = data.inventory.slice();
+  // stats
+  document.getElementById('stat-items').textContent = items.length;
+  document.getElementById('stat-expired').textContent = items.filter(i => i.expDate && new Date(i.expDate) < today).length;
+  document.getElementById('stat-soon').textContent = items.filter(i => i.expDate && new Date(i.expDate) >= today && new Date(i.expDate) <= soon).length;
+  document.getElementById('stat-low').textContent = items.filter(i => i.reorder > 0 && i.qty <= i.reorder).length;
+
+  // filter
+  if (stockFilter === 'food' || stockFilter === 'parts' || stockFilter === 'supplies') items = items.filter(i => i.category === stockFilter);
+  if (stockFilter === 'expiring') items = items.filter(i => i.expDate && new Date(i.expDate) <= soon);
+  if (q) items = items.filter(i => (i.name+' '+(i.source||'')+' '+(i.location||'')).toLowerCase().includes(q));
+
+  // FIFO sort: items with expiry first, soonest first
+  items.sort((a,b) => {
+    if (a.expDate && b.expDate) return a.expDate.localeCompare(b.expDate);
+    if (a.expDate) return -1; if (b.expDate) return 1; return a.name.localeCompare(b.name);
+  });
+
+  const tbody = document.getElementById('stockBody');
+  if (items.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No items. Add one above.</td></tr>'; return; }
+  tbody.innerHTML = items.map(i => {
+    let rowClass = '';
+    if (i.expDate) {
+      const e = new Date(i.expDate);
+      if (e < today) rowClass = 'row-expired';
+      else if (e <= soon) rowClass = 'row-soon';
+    }
+    const lowBadge = (i.reorder>0 && i.qty<=i.reorder) ? ' <span class="badge badge-amber">LOW</span>' : '';
+    const catIcon = i.category==='food'?'🥫':i.category==='parts'?'🔧':'📦';
+    return `<tr class="${rowClass}">
+      <td>${catIcon} <strong>${escapeHtml(i.name)}</strong>${lowBadge}${i.notes?'<br><span class="small muted">'+escapeHtml(i.notes)+'</span>':''}</td>
+      <td><strong>${i.qty}</strong></td>
+      <td>${i.unit}</td>
+      <td>${i.expDate?fmtDate(i.expDate):'—'}</td>
+      <td>${escapeHtml(i.location||'—')}</td>
+      <td>${escapeHtml(i.source||'—')}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="editItem('${i.id}')">✎</button>
+        <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="deleteItem('${i.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ============ INTAKE ============
+function saveIntake() {
+  const date = document.getElementById('inDate').value;
+  const source = document.getElementById('inSource').value;
+  const pounds = parseFloat(document.getElementById('inPounds').value);
+  if (!date) { showToast('Date required', true); return; }
+  if (!source) { showToast('Source required', true); return; }
+  if (!pounds || pounds <= 0) { showToast('Pounds required', true); return; }
+  const data = ensureKeys(loadData());
+  const valueField = document.getElementById('inValue').value;
+  data.intake.push({
+    id: uuid(), date, source, pounds,
+    method: document.getElementById('inMethod').value,
+    type: document.getElementById('inType').value || '',
+    ref: document.getElementById('inRef').value.trim(),
+    value: valueField ? parseFloat(valueField) : Math.round(pounds * VALUE_PER_LB * 100)/100,
+    valueAuto: !valueField,
+    notes: document.getElementById('inNotes').value.trim()
+  });
+  saveData(data);
+  showToast('Logged ' + pounds + ' lbs from ' + source);
+  clearIntakeForm(); renderIntake(); renderFlow();
+}
+function clearIntakeForm() {
+  ['inPounds','inRef','inValue','inNotes'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('inSource').selectedIndex = 0;
+  document.getElementById('inMethod').selectedIndex = 0;
+  document.getElementById('inType').selectedIndex = 0;
+  document.getElementById('inDate').valueAsDate = new Date();
+}
+function deleteIntake(id) {
+  if (!confirm('Delete this intake entry?')) return;
+  const data = ensureKeys(loadData());
+  data.intake = data.intake.filter(x => x.id !== id);
+  saveData(data); renderIntake(); renderFlow();
+}
+function renderIntake() {
+  const data = ensureKeys(loadData());
+  const tbody = document.getElementById('intakeBody');
+  const rows = data.intake.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  if (rows.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No intake logged yet.</td></tr>'; return; }
+  const methodLabel = {scale:'Scale', receipt:'Receipt', estimate:'Estimate'};
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${fmtDate(r.date)}</td>
+    <td>${escapeHtml(r.source)}</td>
+    <td><strong>${r.pounds}</strong> lbs</td>
+    <td>${methodLabel[r.method]||r.method}${r.method==='estimate'?' <span class="est-badge">EST</span>':''}</td>
+    <td>${escapeHtml(r.type||'—')}</td>
+    <td>$${(r.value||0).toLocaleString()}${r.valueAuto?' <span class="est-badge">AUTO</span>':''}</td>
+    <td><button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="deleteIntake('${r.id}')">✕</button></td>
+  </tr>`).join('');
+}
+
+// ============ WASTE ============
+function saveWaste() {
+  const date = document.getElementById('wDate').value;
+  if (!date) { showToast('Date required', true); return; }
+  const method = document.getElementById('wMethod').value;
+  let pounds = 0, isEstimate = false;
+  if (method === 'volume') {
+    const base = containerBaseLbs[document.getElementById('wContainer').value] || 0;
+    const count = parseFloat(document.getElementById('wCount').value) || 0;
+    const mult = densityMult[document.getElementById('wDensity').value] || 1;
+    pounds = Math.round(base * count * mult);
+    isEstimate = true;
+  } else {
+    pounds = parseFloat(document.getElementById('wPounds').value) || 0;
+  }
+  if (pounds <= 0) { showToast('Enter an amount first', true); return; }
+  const data = ensureKeys(loadData());
+  data.waste.push({
+    id: uuid(), date, pounds, isEstimate,
+    reason: document.getElementById('wReason').value,
+    source: document.getElementById('wSource').value || '',
+    type: document.getElementById('wType').value || '',
+    notes: document.getElementById('wNotes').value.trim()
+  });
+  saveData(data);
+  showToast('Logged ' + pounds + ' lbs wasted');
+  clearWasteForm(); renderWaste(); renderFlow();
+}
+function clearWasteForm() {
+  document.getElementById('wNotes').value = '';
+  document.getElementById('wPounds').value = '';
+  document.getElementById('wCount').value = '1';
+  document.getElementById('wDate').valueAsDate = new Date();
+  document.getElementById('wSource').selectedIndex = 0;
+  document.getElementById('wReason').selectedIndex = 0;
+  document.getElementById('wType').selectedIndex = 0;
+  updateWasteEstimate();
+}
+function deleteWaste(id) {
+  if (!confirm('Delete this waste entry?')) return;
+  const data = ensureKeys(loadData());
+  data.waste = data.waste.filter(x => x.id !== id);
+  saveData(data); renderWaste(); renderFlow();
+}
+function renderWaste() {
+  const data = ensureKeys(loadData());
+  const tbody = document.getElementById('wasteBody');
+  const rows = data.waste.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  if (rows.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No waste logged yet.</td></tr>'; return; }
+  const reasonLabel = {expired:'Expired',spoiled:'Spoiled',recall:'Recall','temp-loss':'Temp loss',pest:'Pest',other:'Other'};
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${fmtDate(r.date)}</td>
+    <td><strong>${r.pounds}</strong> lbs${r.isEstimate?' <span class="est-badge">EST</span>':''}</td>
+    <td>${reasonLabel[r.reason]||r.reason}</td>
+    <td>${escapeHtml(r.source||'—')}</td>
+    <td>${escapeHtml(r.type||'—')}</td>
+    <td class="small">${escapeHtml(r.notes||'')}</td>
+    <td><button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="deleteWaste('${r.id}')">✕</button></td>
+  </tr>`).join('');
+}
+
+// ============ FOOD FLOW ============
+function periodStart(period) {
+  const now = new Date();
+  if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
+  if (period === 'ytd') return new Date(now.getFullYear(), 0, 1);
+  return new Date(2000,0,1);
+}
+function renderFlow() {
+  const data = ensureKeys(loadData());
+  const period = document.getElementById('flowPeriod').value;
+  const start = periodStart(period);
+  document.getElementById('flowPeriodLabel').textContent = period==='month'?'This month':period==='ytd'?'Year to date':'All time';
+
+  const lbsIn = data.intake.filter(r => new Date(r.date) >= start).reduce((s,r)=>s+(r.pounds||0),0);
+  const lbsWaste = data.waste.filter(r => new Date(r.date) >= start).reduce((s,r)=>s+(r.pounds||0),0);
+
+  // distributed: boxes from signins × avg weight, plus manual distributions
+  const boxes = data.signins.filter(s => new Date(s.date) >= start).reduce((s,x)=>s+(parseInt(x.boxesGiven)||0),0);
+  const distManual = (data.distributions||[]).filter(d => new Date(d.date) >= start).reduce((s,d)=>s+(d.pounds||0),0);
+  const lbsOut = boxes * AVG_BOX_WEIGHT + distManual;
+
+  const bal = lbsIn - lbsOut - lbsWaste;
+  const wasteRate = lbsIn > 0 ? Math.round((lbsWaste / lbsIn) * 100) : 0;
+
+  document.getElementById('flow-in').textContent = Math.round(lbsIn).toLocaleString();
+  document.getElementById('flow-out').textContent = Math.round(lbsOut).toLocaleString();
+  document.getElementById('flow-waste').textContent = Math.round(lbsWaste).toLocaleString();
+  document.getElementById('flow-bal').textContent = Math.round(bal).toLocaleString();
+  document.getElementById('flow-wasterate').textContent = wasteRate + '%';
+}
+
+// ============ REPORTS ============
+function runReport() {
+  const data = ensureKeys(loadData());
+  const from = document.getElementById('repFrom').value;
+  const to = document.getElementById('repTo').value;
+  const fromD = from ? new Date(from) : new Date(2000,0,1);
+  const toD = to ? new Date(to+'T23:59:59') : new Date();
+
+  const intake = data.intake.filter(r => { const d=new Date(r.date); return d>=fromD && d<=toD; });
+  const waste = data.waste.filter(r => { const d=new Date(r.date); return d>=fromD && d<=toD; });
+
+  // by source
+  const sources = {};
+  intake.forEach(r => {
+    if (!sources[r.source]) sources[r.source] = { pounds: 0, value: 0, count: 0 };
+    sources[r.source].pounds += r.pounds || 0;
+    sources[r.source].value += r.value || 0;
+    sources[r.source].count++;
+  });
+
+  const totalIn = intake.reduce((s,r)=>s+(r.pounds||0),0);
+  const totalVal = intake.reduce((s,r)=>s+(r.value||0),0);
+  const totalWaste = waste.reduce((s,r)=>s+(r.pounds||0),0);
+
+  // distributed in range
+  const boxes = data.signins.filter(s => { const d=new Date(s.date); return d>=fromD && d<=toD; }).reduce((s,x)=>s+(parseInt(x.boxesGiven)||0),0);
+  const families = data.signins.filter(s => { const d=new Date(s.date); return d>=fromD && d<=toD; }).length;
+  const people = data.signins.filter(s => { const d=new Date(s.date); return d>=fromD && d<=toD; }).reduce((s,x)=>s+(parseInt(x.householdSize)||0),0);
+  const lbsOut = boxes * AVG_BOX_WEIGHT;
+
+  let html = '<div class="report-summary" style="background:var(--cream-warm);border-left:4px solid var(--red);padding:var(--s5);border-radius:8px;">';
+  html += '<h3 class="subsection-title" style="margin-top:0;">Report: ' + (from||'start') + ' to ' + (to||'today') + '</h3>';
+  html += '<p><strong>Total received:</strong> ' + Math.round(totalIn).toLocaleString() + ' lbs (est. value $' + Math.round(totalVal).toLocaleString() + ')</p>';
+  html += '<p><strong>Distributed:</strong> ~' + Math.round(lbsOut).toLocaleString() + ' lbs to ' + families.toLocaleString() + ' families (' + people.toLocaleString() + ' people)</p>';
+  html += '<p><strong>Wasted:</strong> ' + Math.round(totalWaste).toLocaleString() + ' lbs (' + (totalIn>0?Math.round(totalWaste/totalIn*100):0) + '% of intake)</p>';
+  html += '</div>';
+
+  html += '<h3 class="subsection-title">Pounds received by source</h3><div class="table-wrap"><table><thead><tr><th>Source</th><th>Deliveries</th><th>Pounds</th><th>Est. Value</th></tr></thead><tbody>';
+  const sortedSources = Object.keys(sources).sort((a,b)=>sources[b].pounds-sources[a].pounds);
+  if (sortedSources.length === 0) html += '<tr><td colspan="4" class="empty">No intake in this range</td></tr>';
+  sortedSources.forEach(s => {
+    html += '<tr><td><strong>'+escapeHtml(s)+'</strong></td><td>'+sources[s].count+'</td><td>'+Math.round(sources[s].pounds).toLocaleString()+' lbs</td><td>$'+Math.round(sources[s].value).toLocaleString()+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<p class="small muted" style="margin-top:var(--s3);">Distributed pounds estimated at ' + AVG_BOX_WEIGHT + ' lbs/box. Adjust this assumption in the code if your boxes weigh differently.</p>';
+
+  document.getElementById('reportOutput').innerHTML = html;
+}
+
+// ============ CSV EXPORTS ============
+function dl(name, csv) {
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=name; a.click();
+  URL.revokeObjectURL(url);
+}
+function exportStockCSV() {
+  const data = ensureKeys(loadData());
+  let csv = 'Name,Category,Qty,Unit,Expiration,Location,Source,Reorder,Notes\n';
+  data.inventory.forEach(i => csv += `"${i.name}",${i.category},${i.qty},${i.unit},${i.expDate||''},"${i.location||''}","${i.source||''}",${i.reorder||0},"${(i.notes||'').replace(/"/g,'""')}"\n`);
+  dl('stock_'+new Date().toISOString().slice(0,10)+'.csv', csv);
+}
+function exportIntakeCSV() {
+  const data = ensureKeys(loadData());
+  let csv = 'Date,Source,Pounds,Method,Type,Reference,Value,Notes\n';
+  data.intake.forEach(r => csv += `${r.date},"${r.source}",${r.pounds},${r.method},"${r.type||''}","${r.ref||''}",${r.value||0},"${(r.notes||'').replace(/"/g,'""')}"\n`);
+  dl('intake_'+new Date().toISOString().slice(0,10)+'.csv', csv);
+}
+function exportWasteCSV() {
+  const data = ensureKeys(loadData());
+  let csv = 'Date,Pounds,Estimate,Reason,Source,Type,Notes\n';
+  data.waste.forEach(r => csv += `${r.date},${r.pounds},${r.isEstimate?'Yes':'No'},${r.reason},"${r.source||''}","${r.type||''}","${(r.notes||'').replace(/"/g,'""')}"\n`);
+  dl('waste_'+new Date().toISOString().slice(0,10)+'.csv', csv);
+}
+
+// ============ INIT ============
+document.getElementById('inDate').valueAsDate = new Date();
+document.getElementById('wDate').valueAsDate = new Date();
+// default report range = this month
+(function(){
+  const now = new Date();
+  document.getElementById('repFrom').valueAsDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('repTo').valueAsDate = now;
+})();
+updateWasteEstimate();
+renderStock();
+renderFlow();
+</script>
+
+</body>
+</html>
