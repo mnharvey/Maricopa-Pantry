@@ -506,22 +506,31 @@ function pushToServer(d) {
 
 // Pull inventory data from server on load, merge into local store
 async function pullFromServer() {
+  let ok = true;
   try {
     const res = await fetch(PANTRY_SERVER + '/data');
     if (!res.ok) throw new Error('server');
     const serverData = await res.json();
     const local = ensureKeys(loadData());
-    // Server is the source of truth for these three arrays
     local.inventory = serverData.inventory || [];
     local.intake = serverData.intake || [];
     local.waste = serverData.waste || [];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
-    setSyncStatus('saved');
-    return true;
-  } catch (e) {
-    setSyncStatus('offline');
-    return false;
-  }
+  } catch (e) { ok = false; }
+
+  // Also pull shared sign-ins so the Food Flow "distributed" number is accurate
+  try {
+    const res2 = await fetch(PANTRY_SERVER + '/signins');
+    if (res2.ok) {
+      const sd = await res2.json();
+      const local = ensureKeys(loadData());
+      local.signins = sd.signins || [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+    }
+  } catch (e) { /* leave local signins */ }
+
+  setSyncStatus(ok ? 'saved' : 'offline');
+  return ok;
 }
 
 function setSyncStatus(state) {
