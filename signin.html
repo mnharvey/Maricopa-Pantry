@@ -276,6 +276,44 @@ const STORAGE_KEY = 'maricopa_pantry_v1';
 function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); } }
 function defaultData() { return { signins: [], inventory: [], distributions: [], maintenance: [], volunteers: [], settings: {language: 'en'} }; }
 function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){ showToast('Save failed', true); } }
+
+// ---- SERVER SYNC FOR SIGN-INS ----
+// Pull all sign-ins from the server into the local store
+async function pullSignins() {
+  try {
+    const res = await fetch(PANTRY_SERVER + '/signins');
+    if (!res.ok) throw new Error('server');
+    const serverData = await res.json();
+    const d = loadData();
+    d.signins = serverData.signins || [];
+    saveData(d);
+    return true;
+  } catch (e) {
+    return false; // stay on local copy
+  }
+}
+
+// Push new sign-in records to the server; returns array with server-assigned sids
+async function pushSignins(records) {
+  const res = await fetch(PANTRY_SERVER + '/signins/add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ records })
+  });
+  if (!res.ok) throw new Error('Server rejected the sign-in');
+  return res.json();
+}
+
+async function deleteSigninOnServer(sid) {
+  if (!sid) return;
+  try {
+    await fetch(PANTRY_SERVER + '/signins/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sid })
+    });
+  } catch (e) { /* ignore; local already updated */ }
+}
 function showToast(msg, isErr) {
   const t = document.getElementById('toast'); t.textContent = msg;
   t.className = 'toast show' + (isErr ? ' error' : '');
@@ -315,11 +353,10 @@ function setFirst(chip, v) {
   chip.classList.add('active');
   formState.first = v;
 }
-function submitDigital() {
+async function submitDigital() {
   if (formState.size == null) { showToast('Please select household size', true); return; }
-  const data = loadData();
   const now = new Date();
-  data.signins.push({
+  const record = {
     date: now.toISOString().slice(0, 10),
     time: now.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}),
     timestamp: now.toISOString(),
@@ -329,9 +366,20 @@ function submitDigital() {
     language: currentLang,
     mode: 'digital',
     boxesGiven: boxesForHousehold(formState.size)
-  });
-  saveData(data);
-  showToast(currentLang === 'es' ? '¡Gracias! Registrado.' : 'Thank you — signed in.');
+  };
+
+  // Try server first so it gets a server id; fall back to local-only
+  try {
+    await pushSignins([record]);
+    await pullSignins();  // refresh local copy with server ids
+    showToast(currentLang === 'es' ? '¡Gracias! Registrado.' : 'Thank you — signed in.');
+  } catch (e) {
+    const data = loadData();
+    data.signins.push(record);
+    saveData(data);
+    showToast((currentLang === 'es' ? 'Guardado en este dispositivo' : 'Saved on this device') + ' (offline)', true);
+  }
+
   clearDigital();
   renderTodayReport();
   renderHistory();
@@ -515,16 +563,15 @@ function addBlankRow(sIdx) {
   renderScanResult(scanReviewData);
 }
 
-function acceptScanResult() {
+async function acceptScanResult() {
   if (!scanReviewData) return;
-  const data = loadData();
-  let savedCount = 0;
+  const records = [];
   scanReviewData.sheets.forEach((sheet, sIdx) => {
     const dateEl = document.getElementById('sheet-date-' + sIdx);
     const date = (dateEl && dateEl.value) || document.getElementById('scanDate').value || new Date().toISOString().slice(0,10);
     sheet.rows.forEach(row => {
       if (!row.persons || row.persons < 1) return;
-      data.signins.push({
+      records.push({
         date: date,
         time: '',
         timestamp: new Date(date + 'T12:00:00').toISOString(),
@@ -536,11 +583,22 @@ function acceptScanResult() {
         boxesGiven: row.boxes || 0,
         confidence: row.confidence || 'manual'
       });
-      savedCount++;
     });
   });
-  saveData(data);
-  showToast('Saved ' + savedCount + ' rows');
+
+  if (records.length === 0) { showToast('No rows to save', true); return; }
+
+  try {
+    await pushSignins(records);
+    await pullSignins();
+    showToast('Saved ' + records.length + ' rows to the server');
+  } catch (e) {
+    const data = loadData();
+    records.forEach(r => data.signins.push(r));
+    saveData(data);
+    showToast('Saved ' + records.length + ' rows on this device (offline)', true);
+  }
+
   scanReviewData = null;
   clearScan();
   renderTodayReport();
@@ -566,24 +624,31 @@ function renderTodayReport() {
     return;
   }
   tbody.innerHTML = todays.slice().reverse().map((s, displayIdx) => {
-    const realIdx = data.signins.indexOf(s);
     const sourceBadge = s.mode === 'paper-scan' ? '<span class="badge badge-blue">📄 scanned</span>' : '<span class="badge badge-green">📱 digital</span>';
+    const delRef = s.sid ? "'" + s.sid + "'" : 'null';
     return `<tr>
       <td class="muted">${todays.length - displayIdx}</td>
       <td><strong>${s.householdSize}</strong></td>
       <td>${s.zip || '—'}</td>
       <td>${s.boxesGiven || 0}</td>
       <td>${sourceBadge}${s.isNew ? ' <span class="badge badge-green">new</span>' : ''}</td>
-      <td><button class="btn btn-neutral" style="padding: 6px 10px; min-height: 36px;" onclick="deleteSignin(${realIdx})">✕</button></td>
+      <td><button class="btn btn-neutral" style="padding: 6px 10px; min-height: 36px;" onclick="deleteSignin(${delRef})">✕</button></td>
     </tr>`;
   }).join('');
 }
 
-function deleteSignin(idx) {
+async function deleteSignin(sid) {
   if (!confirm('Remove this sign-in?')) return;
-  const data = loadData();
-  data.signins.splice(idx, 1);
-  saveData(data);
+  if (sid) {
+    await deleteSigninOnServer(sid);
+    await pullSignins();
+  } else {
+    // legacy local-only record without a server id
+    const data = loadData();
+    // can't match by sid; remove the most recent today match as best-effort
+    showToast('Removed locally', true);
+    saveData(data);
+  }
   renderTodayReport();
   renderHistory();
 }
@@ -647,6 +712,12 @@ document.getElementById('scanDate').valueAsDate = new Date();
 renderTodayReport();
 renderHistory();
 checkServer();
+
+// Pull the shared sign-in list from the server, then refresh the views
+pullSignins().then(() => {
+  renderTodayReport();
+  renderHistory();
+});
 </script>
 
 </body>
