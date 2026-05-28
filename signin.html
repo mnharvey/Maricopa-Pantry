@@ -342,10 +342,10 @@ function setSize(btn, n) {
   document.getElementById('sizeHelp').textContent = 'Boxes: ' + boxesForHousehold(n);
 }
 function boxesForHousehold(n) {
-  if (n === '8+') return 3;
+  if (n === '8+') return 2;     // 8+ falls into the 6-10 band
   const num = parseInt(n);
-  if (num <= 4) return 1;
-  if (num <= 7) return 2;
+  if (num <= 5) return 1;
+  if (num <= 10) return 2;
   return 3;
 }
 function setFirst(chip, v) {
