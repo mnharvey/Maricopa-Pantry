@@ -3,222 +3,595 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Maricopa Pantry — Volunteer Portal</title>
+<title>Assets · Maricopa Pantry</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="pantry.css" />
+<style>
+  .asset-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--s4);
+  }
+  .asset-card {
+    background: var(--white); border: 1px solid var(--line); border-radius: 8px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .asset-photo {
+    width: 100%; aspect-ratio: 4/3; background: var(--cream);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gray-light); font-size: 48px; overflow: hidden;
+  }
+  .asset-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .asset-body { padding: var(--s4); flex: 1; display: flex; flex-direction: column; }
+  .asset-name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 18px; color: var(--black); }
+  .asset-tag { font-size: 12px; color: var(--gray); font-family: monospace; margin-top: 2px; }
+  .asset-meta { font-size: 13px; color: var(--gray); margin-top: var(--s2); line-height: 1.5; }
+  .asset-meta strong { color: var(--ink); }
+  .asset-actions { display: flex; gap: var(--s2); margin-top: var(--s3); }
+  .asset-actions .btn { flex: 1; padding: 8px; font-size: 13px; min-height: 40px; }
+
+  .photo-thumbs {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--s2); margin-top: var(--s2);
+  }
+  .photo-thumb {
+    position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-thumb .remove {
+    position: absolute; top: 2px; right: 2px;
+    background: var(--red); color: white; border: none;
+    width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 14px;
+  }
+
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s3); }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  @media (max-width: 700px) { .form-grid-3, .form-grid-2 { grid-template-columns: 1fr; } }
+
+  .status-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .status-active { background: var(--green-soft); color: var(--green); }
+  .status-repair { background: var(--amber-soft); color: var(--amber); }
+  .status-retired { background: #ececea; color: var(--gray); }
+  .status-disposed { background: var(--red-soft); color: var(--red-dark); }
+
+  /* Printable tag sheet */
+  .tag-sheet {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 20px;
+  }
+  .tag {
+    border: 2px solid var(--black); border-radius: 8px;
+    padding: 14px; text-align: center;
+    background: white; break-inside: avoid;
+  }
+  .tag-org { font-family: 'Fraunces', serif; font-size: 14px; font-weight: 700; color: var(--red); }
+  .tag-name { font-size: 12px; margin: 8px 0 4px; font-weight: 600; }
+  .tag-id { font-family: monospace; font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+  .tag-contact { font-size: 10px; color: var(--gray); margin-top: 6px; }
+  @media print {
+    body * { visibility: hidden; }
+    #tagPrintArea, #tagPrintArea * { visibility: visible; }
+    #tagPrintArea { position: absolute; left: 0; top: 0; width: 100%; }
+    .header, .btn-row, .filter-bar, .no-print { display: none !important; }
+  }
+</style>
 </head>
 <body>
 
 <div class="header">
-  <img class="header-logo" src="https://img1.wsimg.com/isteam/ip/4d107baa-83e4-44ec-a71f-4f505279b444/IMG_5026.PNG" alt="Maricopa Pantry" />
+  <a class="header-back" href="index.html">← Home</a>
   <div class="header-titles">
-    <div class="header-title">Maricopa Pantry</div>
-    <div class="header-sub">Volunteer Portal · Neighbors Helping Neighbors</div>
+    <div class="header-title">Asset Registry</div>
+    <div class="header-sub">Equipment · Tools · Vehicles &nbsp; <span id="syncStatus" style="font-weight:600;"></span></div>
   </div>
 </div>
 
 <div class="container">
 
-  <!-- TODAY'S QUICK GLANCE -->
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total Assets</div></div>
+    <div class="stat ok"><div class="stat-value" id="stat-active">0</div><div class="stat-label">In Service</div></div>
+    <div class="stat warn"><div class="stat-value" id="stat-repair">0</div><div class="stat-label">Needs Repair</div></div>
+    <div class="stat"><div class="stat-value" id="stat-value">$0</div><div class="stat-label">Total Value</div></div>
+  </div>
+
   <div class="card">
     <div class="card-header">
       <div>
-        <div class="card-title">Today at the Pantry</div>
-        <div class="card-subtitle" id="todayDate"></div>
-      </div>
-      <button class="btn btn-neutral" onclick="refreshStats()">↻ Refresh</button>
-    </div>
-
-    <div class="stat-grid">
-      <div class="stat ok">
-        <div class="stat-value" id="stat-families">—</div>
-        <div class="stat-label">Families Served This Week</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value" id="stat-people">—</div>
-        <div class="stat-label">People in Households</div>
-      </div>
-      <div class="stat warn" id="stat-expiring-wrap">
-        <div class="stat-value" id="stat-expiring">—</div>
-        <div class="stat-label">Items Expiring Soon</div>
-      </div>
-      <div class="stat alert" id="stat-maint-wrap">
-        <div class="stat-value" id="stat-maint">—</div>
-        <div class="stat-label">Maintenance Due</div>
+        <div class="card-title" id="formTitle">Add Asset</div>
+        <div class="card-subtitle">📷 Tap "Scan nameplate" to auto-fill from a photo of the equipment label.</div>
       </div>
     </div>
 
-    <div class="notice notice-info" style="margin-top: var(--s4); margin-bottom: 0;">
-      💡 Stats update automatically as you use the tools. Use <strong>Export Backup</strong> at the bottom of each tool to save your data.
+    <input type="hidden" id="editId" />
+
+    <div class="btn-row" style="margin-top:0;">
+      <button class="btn btn-secondary btn-large" onclick="document.getElementById('nameplateInput').click()">📷 Scan Nameplate</button>
+      <input type="file" id="nameplateInput" accept="image/*" capture="environment" style="display:none;" onchange="scanNameplate(this)" />
     </div>
-  </div>
+    <div id="scanStatus" style="display:none; margin-top:var(--s2);" class="notice notice-info"></div>
 
-  <!-- TOOLS -->
-  <h2 class="section-title">Tools</h2>
-  <div class="tile-grid">
-
-    <a class="tile" href="signin.html">
-      <div class="tile-icon">📝</div>
-      <div class="tile-title">Sign-In Sheet</div>
-      <div class="tile-desc">Digital sign-in OR scan paper sheets to count families. Pulls a daily report.</div>
-    </a>
-
-    <a class="tile" href="inventory.html">
-      <div class="tile-icon">📦</div>
-      <div class="tile-title">Inventory</div>
-      <div class="tile-desc">Stock (FIFO), pounds in by source, waste tracking, and food-flow reports.</div>
-    </a>
-
-    <div class="tile" style="opacity:0.55; cursor:not-allowed;" onclick="return false;">
-      <div class="tile-icon">🍽️</div>
-      <div class="tile-title">Distribution & Burn Rate <span style="font-size:11px; background:var(--amber-soft); color:var(--amber); padding:2px 8px; border-radius:4px; vertical-align:middle;">SOON</span></div>
-      <div class="tile-desc">Log boxes given out, see weeks of supply remaining, flag what to use up.</div>
-    </div>
-
-    <a class="tile" href="maintenance.html">
-      <div class="tile-icon">🔧</div>
-      <div class="tile-title">Maintenance</div>
-      <div class="tile-desc">Equipment checks, temperature logs, and scheduled service for trucks, fridges, HVAC.</div>
-    </a>
-
-    <a class="tile" href="assets.html">
-      <div class="tile-icon">🏷️</div>
-      <div class="tile-title">Asset Registry</div>
-      <div class="tile-desc">Full equipment, tools, and vehicle registry. Nameplate scanner, photos, printable tags.</div>
-    </a>
-
-    <div class="tile" style="opacity:0.55; cursor:not-allowed;" onclick="return false;">
-      <div class="tile-icon">🙋</div>
-      <div class="tile-title">Volunteer Hours <span style="font-size:11px; background:var(--amber-soft); color:var(--amber); padding:2px 8px; border-radius:4px; vertical-align:middle;">SOON</span></div>
-      <div class="tile-desc">Track who showed up and for how long. Funders ask for these numbers.</div>
+    <div class="form-grid-2">
+      <div>
+        <label>Asset name <span class="required">*</span></label>
+        <input type="text" id="aName" placeholder="Walk-in Refrigerator / Ford Transit / DeWalt Drill" />
+      </div>
+      <div>
+        <label>Category</label>
+        <select id="aCategory">
+          <option value="equipment">🏭 Equipment (fridge, HVAC)</option>
+          <option value="vehicle">🚚 Vehicle</option>
+          <option value="tool">🔧 Tool</option>
+          <option value="it">💻 IT / Electronics</option>
+          <option value="furniture">🪑 Furniture / Fixtures</option>
+          <option value="other">📦 Other</option>
+        </select>
+      </div>
     </div>
 
-    <a class="tile" href="grants.html">
-      <div class="tile-icon">✍️</div>
-      <div class="tile-title">Grant Writing</div>
-      <div class="tile-desc">Org profile, AI-powered drafter, budget narratives, pipeline tracker.</div>
-    </a>
+    <div class="form-grid-3">
+      <div><label>Brand</label><input type="text" id="aBrand" placeholder="Trane, Ford, DeWalt" /></div>
+      <div><label>Model</label><input type="text" id="aModel" placeholder="Model #" /></div>
+      <div><label>Serial #</label><input type="text" id="aSerial" placeholder="Serial #" /></div>
+    </div>
 
-  </div>
+    <label>Specs / Details</label>
+    <input type="text" id="aSpecs" placeholder="3-ton, 20x25x1 MERV 11, 20V max, etc." />
 
-  <!-- BACKUP / RESTORE -->
-  <h2 class="section-title" style="margin-top: var(--s7);">Data Backup</h2>
-  <div class="card">
-    <p style="margin-bottom: var(--s3);">All tool data lives in your browser. <strong>Export a backup at the end of each session</strong> so nothing is lost.</p>
+    <div class="form-grid-3">
+      <div>
+        <label>Purchase date</label>
+        <input type="date" id="aPurchDate" />
+      </div>
+      <div>
+        <label>Purchase price</label>
+        <input type="number" id="aPurchPrice" min="0" step="1" placeholder="0" />
+      </div>
+      <div>
+        <label>Current value</label>
+        <input type="number" id="aCurrValue" min="0" step="1" placeholder="depreciated" />
+      </div>
+    </div>
+
+    <div class="form-grid-3">
+      <div>
+        <label>Vendor</label>
+        <input type="text" id="aVendor" placeholder="Where you bought it" />
+      </div>
+      <div>
+        <label>Warranty expires</label>
+        <input type="date" id="aWarranty" />
+      </div>
+      <div>
+        <label>Year manufactured</label>
+        <input type="text" id="aYear" placeholder="2023" />
+      </div>
+    </div>
+
+    <div class="form-grid-2">
+      <div>
+        <label>Location</label>
+        <select id="aLocation">
+          <option value="">— Select —</option>
+          <option>Warehouse</option>
+          <option>Dry Storage / Shelves</option>
+          <option>Walk-in Refrigerator</option>
+          <option>Walk-in Freezer</option>
+          <option>Truck</option>
+          <option>Workshop / Parts Bin</option>
+          <option>Office</option>
+          <option>Offsite / Storage</option>
+        </select>
+      </div>
+      <div>
+        <label>Status</label>
+        <select id="aStatus">
+          <option value="active">In Service</option>
+          <option value="repair">Needs Repair</option>
+          <option value="retired">Retired</option>
+          <option value="disposed">Disposed / Sold</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Notes</label>
+    <input type="text" id="aNotes" placeholder="Any additional info" />
+
+    <label>Photos (optional — auto-resized to save space)</label>
+    <div class="btn-row" style="margin-top:0;">
+      <button class="btn btn-neutral" onclick="document.getElementById('photoInput').click()">📷 Add Photo</button>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none;" onchange="addPhotos(this)" />
+    </div>
+    <div class="photo-thumbs" id="photoThumbs"></div>
+
     <div class="btn-row">
-      <button class="btn btn-primary btn-large" onclick="exportAll()">📥 Export All Data</button>
-      <button class="btn btn-secondary btn-large" onclick="document.getElementById('importFile').click()">📤 Restore from Backup</button>
-      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importAll(event)" />
+      <button class="btn btn-primary btn-large" onclick="saveAsset()">💾 Save Asset</button>
+      <button class="btn btn-neutral btn-large" onclick="clearForm()">Clear</button>
     </div>
   </div>
 
-  <div class="footer">
-    Maricopa Pantry · #neighborshelpingneighbors · <a href="https://maricopapantry.org" style="color: var(--red);">maricopapantry.org</a>
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Asset List</div><div class="card-subtitle">Everything the pantry owns</div></div>
+      <div class="btn-row" style="margin:0;">
+        <button class="btn btn-neutral" onclick="printTags()">🏷️ Print Tags</button>
+        <button class="btn btn-neutral" onclick="exportCSV()">📊 CSV</button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <input type="search" id="searchBox" placeholder="🔍 Search name, brand, model, serial..." oninput="render()" />
+      <div class="chip-group" style="margin:0;">
+        <div class="chip active" data-filter="all" onclick="setFilter(this,'all')">All</div>
+        <div class="chip" data-filter="equipment" onclick="setFilter(this,'equipment')">🏭 Equipment</div>
+        <div class="chip" data-filter="vehicle" onclick="setFilter(this,'vehicle')">🚚 Vehicles</div>
+        <div class="chip" data-filter="tool" onclick="setFilter(this,'tool')">🔧 Tools</div>
+        <div class="chip" data-filter="repair" onclick="setFilter(this,'repair')">⚠️ Needs Repair</div>
+      </div>
+    </div>
+    <div class="asset-grid" id="assetGrid"></div>
   </div>
 
 </div>
 
+<!-- Hidden print area -->
+<div id="tagPrintArea" style="display:none;"></div>
+
 <div id="toast" class="toast"></div>
 
 <script>
-// ============================================================
-// SHARED DATA LAYER — used by all pages
-// All tools read/write to window.localStorage under one key
-// ============================================================
+const PANTRY_SERVER = 'https://api.little6llc.com:3001/pantry';
 const STORAGE_KEY = 'maricopa_pantry_v1';
 
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : defaultData();
-  } catch (e) { return defaultData(); }
+function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); } }
+function defaultData() { return { assets: [], settings: {} }; }
+function ensureKeys(d) { d.assets = d.assets || []; return d; }
+function saveLocal(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){} }
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 2500);
 }
-function defaultData() {
-  return {
-    signins: [],        // {date, householdSize, zip, isNew, dietary, language, signinMode}
-    inventory: [],      // {id, name, category, type, unit, qty, expDate, location, source, vendor, reorder, notes}
-    distributions: [],  // {date, families, people, boxesGiven, milkcratesGiven, notes}
-    maintenance: [],    // {id, equipment, task, frequency, lastDone, nextDue, assignedTo, notes}
-    volunteers: [],     // {id, name, date, hoursIn, hoursOut, role, notes}
-    settings: { language: 'en' }
-  };
-}
-function saveData(d) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
-  catch (e) { showToast('Save failed — storage may be full', true); }
-}
+function uuid() { return 'a-' + Date.now() + '-' + Math.random().toString(36).slice(2,7); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(s){ if(!s) return ''; try { return new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch(e){ return s; } }
 
-function showToast(msg, isError) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (isError ? ' error' : '');
-  setTimeout(() => { t.className = 'toast'; }, 2500);
+function setSyncStatus(state) {
+  const el = document.getElementById('syncStatus');
+  if (state === 'saved') { el.textContent = '☁️ Saved'; el.style.color = 'var(--green)'; }
+  else if (state === 'offline') { el.textContent = '⚠️ Offline'; el.style.color = 'var(--amber)'; }
+  else if (state === 'saving') { el.textContent = '☁️ Saving…'; el.style.color = 'var(--gray)'; }
 }
 
-// ============================================================
-// HOME PAGE STATS
-// ============================================================
-function refreshStats() {
-  const data = loadData();
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  document.getElementById('todayDate').textContent = dateStr;
-
-  // This week's families (last 7 days)
-  const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
-  const recentSignins = data.signins.filter(s => new Date(s.date) >= weekAgo);
-  document.getElementById('stat-families').textContent = recentSignins.length;
-  const totalPeople = recentSignins.reduce((sum, s) => sum + (parseInt(s.householdSize) || 0), 0);
-  document.getElementById('stat-people').textContent = totalPeople;
-
-  // Expiring soon (within 14 days)
-  const twoWeeks = new Date(today); twoWeeks.setDate(twoWeeks.getDate() + 14);
-  const expiring = data.inventory.filter(i => i.expDate && new Date(i.expDate) <= twoWeeks && new Date(i.expDate) >= today);
-  document.getElementById('stat-expiring').textContent = expiring.length;
-  if (expiring.length === 0) document.getElementById('stat-expiring-wrap').classList.remove('warn');
-
-  // Maintenance due
-  const maintDue = data.maintenance.filter(m => m.nextDue && new Date(m.nextDue) <= today).length;
-  document.getElementById('stat-maint').textContent = maintDue;
-  if (maintDue === 0) document.getElementById('stat-maint-wrap').classList.remove('alert');
-}
-
-// ============================================================
-// BACKUP / RESTORE
-// ============================================================
-function exportAll() {
-  const data = loadData();
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'maricopa_pantry_backup_' + new Date().toISOString().slice(0,10) + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Backup downloaded');
-}
-
-function importAll(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (!confirm('Restore from backup? This will replace all current data in the browser.')) return;
-  const reader = new FileReader();
-  reader.onload = (evt) => {
+// ---- SERVER SYNC ----
+let pushTimer = null;
+function scheduleSync() {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    setSyncStatus('saving');
     try {
-      const imported = JSON.parse(evt.target.result);
-      saveData(imported);
-      refreshStats();
-      showToast('Backup restored');
-    } catch (err) {
-      showToast('Could not read backup file', true);
-    }
-  };
-  reader.readAsText(file);
+      const d = ensureKeys(loadData());
+      await fetch(PANTRY_SERVER + '/assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assets: d.assets })
+      });
+      setSyncStatus('saved');
+    } catch (e) { setSyncStatus('offline'); }
+  }, 600);
+}
+async function pullFromServer() {
+  try {
+    const res = await fetch(PANTRY_SERVER + '/assets');
+    if (!res.ok) throw new Error('server');
+    const sd = await res.json();
+    const local = ensureKeys(loadData());
+    local.assets = sd.assets || [];
+    saveLocal(local);
+    setSyncStatus('saved');
+    return true;
+  } catch (e) { setSyncStatus('offline'); return false; }
 }
 
-refreshStats();
+// ---- PHOTO HANDLING with auto-resize ----
+let currentPhotos = [];
+function addPhotos(input) {
+  Array.from(input.files).forEach(async f => {
+    if (!f.type.startsWith('image/')) return;
+    try {
+      const resized = await resizeImage(f, 1200, 0.8);
+      currentPhotos.push(resized);
+      renderPhotoThumbs();
+    } catch (e) { showToast('Could not read photo', true); }
+  });
+  input.value = '';
+}
+
+// Resize to max width, JPEG quality 0.8. Returns base64 data URL.
+function resizeImage(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPhotoThumbs() {
+  const div = document.getElementById('photoThumbs');
+  div.innerHTML = currentPhotos.map((p, i) =>
+    `<div class="photo-thumb"><img src="${p}" alt="" /><button class="remove" onclick="removePhoto(${i})">×</button></div>`
+  ).join('');
+}
+function removePhoto(i) { currentPhotos.splice(i, 1); renderPhotoThumbs(); }
+
+// ---- NAMEPLATE SCAN ----
+async function scanNameplate(input) {
+  const file = input.files[0];
+  input.value = '';
+  if (!file) return;
+
+  const status = document.getElementById('scanStatus');
+  status.style.display = '';
+  status.className = 'notice notice-info';
+  status.innerHTML = '<span class="spinner"></span> Reading nameplate…';
+
+  try {
+    // Resize before sending (nameplate scans don't need full res, saves bandwidth)
+    const dataUrl = await resizeImage(file, 1600, 0.85);
+    const base64 = dataUrl.split(',')[1];
+    const mediaType = 'image/jpeg';
+
+    const res = await fetch(PANTRY_SERVER + '/nameplate-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: { media_type: mediaType, data: base64 } })
+    });
+    const parsed = await res.json();
+    if (parsed.error) throw new Error(parsed.error);
+
+    // Fill any fields the AI extracted (don't overwrite what you already typed)
+    fillIfEmpty('aName', parsed.name);
+    fillIfEmpty('aBrand', parsed.brand);
+    fillIfEmpty('aModel', parsed.model);
+    fillIfEmpty('aSerial', parsed.serial);
+    fillIfEmpty('aSpecs', parsed.specs);
+    fillIfEmpty('aYear', parsed.year);
+    if (parsed.category) {
+      // Best-effort category map
+      const catMap = { hvac: 'equipment', refrigeration: 'equipment', appliance: 'equipment', vehicle: 'vehicle', tool: 'tool', electrical: 'equipment' };
+      const mapped = catMap[(parsed.category||'').toLowerCase()] || null;
+      if (mapped) document.getElementById('aCategory').value = mapped;
+    }
+
+    // Also save the scanned photo as an asset photo
+    currentPhotos.push(dataUrl);
+    renderPhotoThumbs();
+
+    const confColor = parsed.confidence === 'high' ? 'var(--green)' : parsed.confidence === 'medium' ? 'var(--amber)' : 'var(--red)';
+    status.className = 'notice notice-success';
+    status.innerHTML = '✓ Nameplate read (<strong style="color:'+confColor+'">'+parsed.confidence+'</strong> confidence). Fields filled — please review and adjust.' + (parsed.warnings ? '<br><em>' + escapeHtml(parsed.warnings) + '</em>' : '');
+  } catch (err) {
+    status.className = 'notice notice-error';
+    status.innerHTML = '❌ Scan failed: ' + escapeHtml(err.message || 'unknown');
+  }
+}
+function fillIfEmpty(id, val) {
+  if (!val) return;
+  const el = document.getElementById(id);
+  if (!el.value) el.value = val;
+}
+
+// ---- SAVE / LOAD / EDIT ----
+let filter = 'all';
+function setFilter(chip, f) {
+  document.querySelectorAll('[data-filter]').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active'); filter = f; render();
+}
+
+function saveAsset() {
+  const name = document.getElementById('aName').value.trim();
+  if (!name) { showToast('Name required', true); return; }
+  const data = ensureKeys(loadData());
+  const id = document.getElementById('editId').value || uuid();
+
+  const asset = {
+    id,
+    tag: computeTag(id, data.assets),
+    name,
+    category: document.getElementById('aCategory').value,
+    brand: document.getElementById('aBrand').value.trim(),
+    model: document.getElementById('aModel').value.trim(),
+    serial: document.getElementById('aSerial').value.trim(),
+    specs: document.getElementById('aSpecs').value.trim(),
+    purchDate: document.getElementById('aPurchDate').value,
+    purchPrice: parseFloat(document.getElementById('aPurchPrice').value) || 0,
+    currValue: parseFloat(document.getElementById('aCurrValue').value) || 0,
+    vendor: document.getElementById('aVendor').value.trim(),
+    warranty: document.getElementById('aWarranty').value,
+    year: document.getElementById('aYear').value.trim(),
+    location: document.getElementById('aLocation').value,
+    status: document.getElementById('aStatus').value,
+    notes: document.getElementById('aNotes').value.trim(),
+    photos: currentPhotos.slice()
+  };
+
+  const ex = data.assets.findIndex(x => x.id === id);
+  if (ex >= 0) { asset.tag = data.assets[ex].tag || asset.tag; data.assets[ex] = asset; }
+  else data.assets.push(asset);
+  saveLocal(data);
+  scheduleSync();
+  showToast('Asset saved');
+  clearForm();
+  render();
+}
+
+function computeTag(id, existing) {
+  // Sequential tag MP-001, MP-002, etc.
+  const nums = existing.map(a => {
+    const m = (a.tag || '').match(/MP-(\d+)/);
+    return m ? parseInt(m[1]) : 0;
+  });
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return 'MP-' + String(next).padStart(3, '0');
+}
+
+function editAsset(id) {
+  const data = ensureKeys(loadData());
+  const a = data.assets.find(x => x.id === id); if (!a) return;
+  document.getElementById('editId').value = a.id;
+  document.getElementById('formTitle').textContent = 'Edit Asset: ' + a.tag;
+  document.getElementById('aName').value = a.name || '';
+  document.getElementById('aCategory').value = a.category || 'equipment';
+  document.getElementById('aBrand').value = a.brand || '';
+  document.getElementById('aModel').value = a.model || '';
+  document.getElementById('aSerial').value = a.serial || '';
+  document.getElementById('aSpecs').value = a.specs || '';
+  document.getElementById('aPurchDate').value = a.purchDate || '';
+  document.getElementById('aPurchPrice').value = a.purchPrice || '';
+  document.getElementById('aCurrValue').value = a.currValue || '';
+  document.getElementById('aVendor').value = a.vendor || '';
+  document.getElementById('aWarranty').value = a.warranty || '';
+  document.getElementById('aYear').value = a.year || '';
+  document.getElementById('aLocation').value = a.location || '';
+  document.getElementById('aStatus').value = a.status || 'active';
+  document.getElementById('aNotes').value = a.notes || '';
+  currentPhotos = (a.photos || []).slice();
+  renderPhotoThumbs();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function deleteAsset(id) {
+  const data = ensureKeys(loadData());
+  const a = data.assets.find(x => x.id === id);
+  if (!a) return;
+  if (!confirm('Delete asset "' + a.name + '" (' + a.tag + ')?\nThis also removes its photos.')) return;
+  data.assets = data.assets.filter(x => x.id !== id);
+  saveLocal(data);
+  scheduleSync();
+  render();
+  showToast('Asset deleted');
+}
+
+function clearForm() {
+  document.getElementById('editId').value = '';
+  document.getElementById('formTitle').textContent = 'Add Asset';
+  ['aName','aBrand','aModel','aSerial','aSpecs','aPurchDate','aPurchPrice','aCurrValue','aVendor','aWarranty','aYear','aNotes'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('aCategory').selectedIndex = 0;
+  document.getElementById('aLocation').selectedIndex = 0;
+  document.getElementById('aStatus').selectedIndex = 0;
+  currentPhotos = [];
+  renderPhotoThumbs();
+  document.getElementById('scanStatus').style.display = 'none';
+}
+
+function render() {
+  const data = ensureKeys(loadData());
+  const q = (document.getElementById('searchBox').value || '').toLowerCase();
+
+  document.getElementById('stat-total').textContent = data.assets.length;
+  document.getElementById('stat-active').textContent = data.assets.filter(a => a.status === 'active').length;
+  document.getElementById('stat-repair').textContent = data.assets.filter(a => a.status === 'repair').length;
+  const totalVal = data.assets.filter(a => a.status !== 'disposed').reduce((s,a) => s + (a.currValue || a.purchPrice || 0), 0);
+  document.getElementById('stat-value').textContent = '$' + Math.round(totalVal).toLocaleString();
+
+  let list = data.assets.slice();
+  if (['equipment','vehicle','tool','it','furniture','other'].includes(filter)) list = list.filter(a => a.category === filter);
+  if (filter === 'repair') list = list.filter(a => a.status === 'repair');
+  if (q) list = list.filter(a => (a.name+' '+a.brand+' '+a.model+' '+a.serial+' '+a.tag+' '+(a.location||'')).toLowerCase().includes(q));
+  list.sort((a,b) => (a.tag||'').localeCompare(b.tag||''));
+
+  const grid = document.getElementById('assetGrid');
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><div class="empty-icon">📦</div>No assets match. Add one above.</div>';
+    return;
+  }
+
+  const catIcon = { equipment:'🏭', vehicle:'🚚', tool:'🔧', it:'💻', furniture:'🪑', other:'📦' };
+  const statusLabel = { active:'In Service', repair:'Needs Repair', retired:'Retired', disposed:'Disposed' };
+  const statusClass = { active:'status-active', repair:'status-repair', retired:'status-retired', disposed:'status-disposed' };
+
+  grid.innerHTML = list.map(a => {
+    const photo = (a.photos && a.photos[0]) ? '<img src="'+a.photos[0]+'" alt="" />' : (catIcon[a.category] || '📦');
+    const val = a.currValue || a.purchPrice || 0;
+    return `<div class="asset-card">
+      <div class="asset-photo">${photo}</div>
+      <div class="asset-body">
+        <div class="asset-name">${escapeHtml(a.name)}</div>
+        <div class="asset-tag">🏷️ ${escapeHtml(a.tag || '')} · <span class="status-badge ${statusClass[a.status]||''}">${statusLabel[a.status]||a.status}</span></div>
+        <div class="asset-meta">
+          ${a.brand || a.model ? '<strong>' + escapeHtml([a.brand, a.model].filter(Boolean).join(' ')) + '</strong><br>' : ''}
+          ${a.serial ? 'S/N: ' + escapeHtml(a.serial) + '<br>' : ''}
+          ${a.location ? '📍 ' + escapeHtml(a.location) + '<br>' : ''}
+          ${val ? '💰 $' + val.toLocaleString() : ''}
+        </div>
+        <div class="asset-actions">
+          <button class="btn btn-secondary" onclick="editAsset('${a.id}')">✎ Edit</button>
+          <button class="btn btn-neutral" onclick="deleteAsset('${a.id}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- PRINTABLE TAGS ----
+function printTags() {
+  const data = ensureKeys(loadData());
+  if (data.assets.length === 0) { showToast('No assets to print', true); return; }
+  const area = document.getElementById('tagPrintArea');
+  area.style.display = '';
+  area.innerHTML = '<div class="tag-sheet">' + data.assets.filter(a => a.status !== 'disposed').map(a => `
+    <div class="tag">
+      <div class="tag-org">MARICOPA PANTRY</div>
+      <div class="tag-name">${escapeHtml(a.name)}</div>
+      <div class="tag-id">${escapeHtml(a.tag)}</div>
+      <div class="tag-contact">Property of Maricopa Pantry · maricopapantry.org</div>
+    </div>
+  `).join('') + '</div>';
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => { area.style.display = 'none'; area.innerHTML = ''; }, 500);
+  }, 100);
+}
+
+function exportCSV() {
+  const data = ensureKeys(loadData());
+  let csv = 'Tag,Name,Category,Brand,Model,Serial,Specs,Location,Status,Purchase Date,Purchase Price,Current Value,Vendor,Warranty,Year,Notes\n';
+  data.assets.forEach(a => {
+    csv += `"${a.tag}","${a.name}",${a.category},"${a.brand}","${a.model}","${a.serial}","${a.specs}","${a.location||''}",${a.status},${a.purchDate||''},${a.purchPrice||0},${a.currValue||0},"${a.vendor||''}",${a.warranty||''},"${a.year||''}","${(a.notes||'').replace(/"/g,'""')}"\n`;
+  });
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = 'assets_' + new Date().toISOString().slice(0,10) + '.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---- INIT ----
+setSyncStatus('saving');
+pullFromServer().then(() => render());
+render();
 </script>
 
 </body>
