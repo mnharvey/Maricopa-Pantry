@@ -91,7 +91,7 @@
   <a class="header-back" href="index.html">← Home</a>
   <div class="header-titles">
     <div class="header-title">Maintenance</div>
-    <div class="header-sub">Equipment checks · Temperature logs · Scheduled service</div>
+    <div class="header-sub">Equipment checks · Temperature logs · Scheduled service &nbsp; <span id="syncStatus" style="font-weight:600;"></span></div>
   </div>
 </div>
 
@@ -362,6 +362,7 @@
 
 <script>
 // ============ STORAGE ============
+const PANTRY_SERVER = 'https://api.little6llc.com:3001/pantry';
 const STORAGE_KEY = 'maricopa_pantry_v1';
 function loadData() {
   try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); }
@@ -376,7 +377,88 @@ function ensureKeys(d) {
   d.tempReadings = d.tempReadings || [];
   return d;
 }
-function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){ showToast('Save failed', true); } }
+function saveData(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){ showToast('Save failed', true); }
+  scheduleMaintSync(d);
+}
+
+// ---- SERVER SYNC ----
+let maintPushTimer = null;
+function scheduleMaintSync(d) {
+  clearTimeout(maintPushTimer);
+  maintPushTimer = setTimeout(async () => {
+    try {
+      await fetch(PANTRY_SERVER + '/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          maintenance: d.maintenance || [],
+          maintenanceLog: d.maintenanceLog || [],
+          tempUnits: d.tempUnits || [],
+          tempReadings: d.tempReadings || []
+        })
+      });
+      setSyncStatus('saved');
+    } catch (e) { setSyncStatus('offline'); }
+  }, 600);
+}
+async function pullMaintFromServer() {
+  try {
+    const res = await fetch(PANTRY_SERVER + '/maintenance');
+    if (!res.ok) throw new Error('server');
+    const sd = await res.json();
+    const local = ensureKeys(loadData());
+    local.maintenance = sd.maintenance || [];
+    local.maintenanceLog = sd.maintenanceLog || [];
+    local.tempUnits = sd.tempUnits || [];
+    local.tempReadings = sd.tempReadings || [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+    setSyncStatus('saved');
+  } catch (e) { setSyncStatus('offline'); }
+
+  // Also pull assets so the equipment dropdown can list them
+  try {
+    const res2 = await fetch(PANTRY_SERVER + '/assets');
+    if (res2.ok) {
+      const ad = await res2.json();
+      const local = ensureKeys(loadData());
+      local.assets = ad.assets || [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+    }
+  } catch (e) {}
+}
+function setSyncStatus(state) {
+  const el = document.getElementById('syncStatus'); if (!el) return;
+  if (state === 'saved') { el.textContent = '☁️ Saved'; el.style.color = 'var(--green)'; }
+  else if (state === 'offline') { el.textContent = '⚠️ Offline'; el.style.color = 'var(--amber)'; }
+}
+
+// Populate the equipment dropdown with assets + fallback options
+function populateEquipmentDropdown() {
+  const sel = document.getElementById('taskEquipment');
+  if (!sel) return;
+  const current = sel.value;
+  const data = ensureKeys(loadData());
+  const assets = (data.assets || []).filter(a => a.status !== 'disposed');
+
+  let html = '<option value="">— Select equipment —</option>';
+  if (assets.length > 0) {
+    html += '<optgroup label="From Asset Registry">';
+    assets.forEach(a => {
+      const label = (a.tag ? a.tag + ' · ' : '') + a.name;
+      html += '<option value="' + escapeHtml(label) + '">' + escapeHtml(label) + '</option>';
+    });
+    html += '</optgroup>';
+  }
+  html += '<optgroup label="General">';
+  ['Walk-in Refrigerator','Walk-in Freezer','Reach-in Refrigerator','Reach-in Freezer',
+   'HVAC','Truck','Forklift','Pallet Jack','Building / Roof','Restrooms',
+   'Fire Extinguishers','Smoke / CO Detectors','Pest Control','Electrical','Plumbing','Other'
+  ].forEach(name => { html += '<option value="' + name + '">' + name + '</option>'; });
+  html += '</optgroup>';
+  sel.innerHTML = html;
+  if (current) sel.value = current;
+}
 function showToast(msg, isErr) {
   const t = document.getElementById('toast'); t.textContent = msg;
   t.className = 'toast show' + (isErr ? ' error' : '');
@@ -937,9 +1019,18 @@ function formatDate(s) {
 }
 
 // ============ INIT ============
+populateEquipmentDropdown();
 renderTasks();
 renderTempGrid();
 renderTempUnitList();
+
+// Pull from server, then re-populate dropdown and re-render
+pullMaintFromServer().then(() => {
+  populateEquipmentDropdown();
+  renderTasks();
+  renderTempGrid();
+  renderTempUnitList();
+});
 </script>
 
 </body>
