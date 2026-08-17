@@ -193,7 +193,7 @@
       </div>
       <div>
         <label>Status</label>
-        <select id="aStatus">
+        <select id="aStatus" onchange="updateDamageVisibility()">
           <option value="active">In Service</option>
           <option value="repair">Needs Repair</option>
           <option value="retired">Retired</option>
@@ -205,12 +205,25 @@
     <label>Notes</label>
     <input type="text" id="aNotes" placeholder="Any additional info" />
 
-    <label>Photos (optional — auto-resized to save space)</label>
+    <label>Reference photo (optional)</label>
     <div class="btn-row" style="margin-top:0;">
-      <button class="btn btn-neutral" onclick="document.getElementById('photoInput').click()">📷 Add Photo</button>
-      <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none;" onchange="addPhotos(this)" />
+      <button class="btn btn-neutral" onclick="document.getElementById('refPhotoInput').click()">📷 Add / Replace Reference Photo</button>
+      <button class="btn btn-neutral" id="removeRefBtn" onclick="removeReferencePhoto()" style="display:none;">🗑️ Remove Photo</button>
+      <input type="file" id="refPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="setReferencePhoto(this)" />
     </div>
-    <div class="photo-thumbs" id="photoThumbs"></div>
+    <div class="help-text">One photo for visual identification — e.g., "which filter goes where."</div>
+    <div class="photo-thumbs" id="referenceThumb"></div>
+
+    <div id="damageSection" style="display:none;">
+      <label>Damage photo (for repair reference)</label>
+      <div class="btn-row" style="margin-top:0;">
+        <button class="btn btn-neutral" onclick="document.getElementById('damagePhotoInput').click()">📷 Add / Replace Damage Photo</button>
+        <button class="btn btn-neutral" id="removeDamageBtn" onclick="removeDamagePhoto()" style="display:none;">🗑️ Remove Photo</button>
+        <input type="file" id="damagePhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="setDamagePhoto(this)" />
+      </div>
+      <div class="help-text">Document what's broken — helpful for repair techs.</div>
+      <div class="photo-thumbs" id="damageThumb"></div>
+    </div>
 
     <div class="btn-row">
       <button class="btn btn-primary btn-large" onclick="saveAsset()">💾 Save Asset</button>
@@ -301,17 +314,66 @@ async function pullFromServer() {
 }
 
 // ---- PHOTO HANDLING with auto-resize ----
-let currentPhotos = [];
-function addPhotos(input) {
-  Array.from(input.files).forEach(async f => {
-    if (!f.type.startsWith('image/')) return;
-    try {
-      const resized = await resizeImage(f, 1200, 0.8);
-      currentPhotos.push(resized);
-      renderPhotoThumbs();
-    } catch (e) { showToast('Could not read photo', true); }
-  });
-  input.value = '';
+let referencePhoto = null;  // single reference photo
+let damagePhoto = null;     // single damage photo (only when status = repair)
+
+async function setReferencePhoto(input) {
+  const f = input.files[0]; input.value = '';
+  if (!f || !f.type.startsWith('image/')) return;
+  try {
+    referencePhoto = await resizeImage(f, 1200, 0.8);
+    renderReferenceThumb();
+  } catch (e) { showToast('Could not read photo', true); }
+}
+function removeReferencePhoto() {
+  referencePhoto = null;
+  renderReferenceThumb();
+}
+function renderReferenceThumb() {
+  const div = document.getElementById('referenceThumb');
+  const btn = document.getElementById('removeRefBtn');
+  if (referencePhoto) {
+    div.innerHTML = `<div class="photo-thumb" style="max-width:200px;"><img src="${referencePhoto}" alt="" /></div>`;
+    btn.style.display = '';
+  } else {
+    div.innerHTML = '';
+    btn.style.display = 'none';
+  }
+}
+
+async function setDamagePhoto(input) {
+  const f = input.files[0]; input.value = '';
+  if (!f || !f.type.startsWith('image/')) return;
+  try {
+    damagePhoto = await resizeImage(f, 1200, 0.8);
+    renderDamageThumb();
+  } catch (e) { showToast('Could not read photo', true); }
+}
+function removeDamagePhoto() {
+  damagePhoto = null;
+  renderDamageThumb();
+}
+function renderDamageThumb() {
+  const div = document.getElementById('damageThumb');
+  const btn = document.getElementById('removeDamageBtn');
+  if (damagePhoto) {
+    div.innerHTML = `<div class="photo-thumb" style="max-width:200px;"><img src="${damagePhoto}" alt="" /></div>`;
+    btn.style.display = '';
+  } else {
+    div.innerHTML = '';
+    btn.style.display = 'none';
+  }
+}
+
+// Show/hide damage photo section based on status
+function updateDamageVisibility() {
+  const status = document.getElementById('aStatus').value;
+  document.getElementById('damageSection').style.display = status === 'repair' ? '' : 'none';
+  // If user changes status away from repair, drop the photo — cleaner data
+  if (status !== 'repair' && damagePhoto) {
+    damagePhoto = null;
+    renderDamageThumb();
+  }
 }
 
 // Resize to max width, JPEG quality 0.8. Returns base64 data URL.
@@ -337,13 +399,7 @@ function resizeImage(file, maxWidth, quality) {
   });
 }
 
-function renderPhotoThumbs() {
-  const div = document.getElementById('photoThumbs');
-  div.innerHTML = currentPhotos.map((p, i) =>
-    `<div class="photo-thumb"><img src="${p}" alt="" /><button class="remove" onclick="removePhoto(${i})">×</button></div>`
-  ).join('');
-}
-function removePhoto(i) { currentPhotos.splice(i, 1); renderPhotoThumbs(); }
+function renderPhotoThumbs() { /* deprecated - kept as no-op to avoid errors */ }
 
 // ---- NAMEPLATE SCAN ----
 async function scanNameplate(input) {
@@ -384,9 +440,7 @@ async function scanNameplate(input) {
       if (mapped) document.getElementById('aCategory').value = mapped;
     }
 
-    // Also save the scanned photo as an asset photo
-    currentPhotos.push(dataUrl);
-    renderPhotoThumbs();
+    // Nameplate photo is discarded once fields are extracted — you have the data.
 
     const confColor = parsed.confidence === 'high' ? 'var(--green)' : parsed.confidence === 'medium' ? 'var(--amber)' : 'var(--red)';
     status.className = 'notice notice-success';
@@ -433,7 +487,8 @@ function saveAsset() {
     location: document.getElementById('aLocation').value,
     status: document.getElementById('aStatus').value,
     notes: document.getElementById('aNotes').value.trim(),
-    photos: currentPhotos.slice()
+    referencePhoto: referencePhoto,
+    damagePhoto: (document.getElementById('aStatus').value === 'repair') ? damagePhoto : null
   };
 
   const ex = data.assets.findIndex(x => x.id === id);
@@ -476,8 +531,11 @@ function editAsset(id) {
   document.getElementById('aLocation').value = a.location || '';
   document.getElementById('aStatus').value = a.status || 'active';
   document.getElementById('aNotes').value = a.notes || '';
-  currentPhotos = (a.photos || []).slice();
-  renderPhotoThumbs();
+  referencePhoto = a.referencePhoto || null;
+  damagePhoto = a.damagePhoto || null;
+  renderReferenceThumb();
+  renderDamageThumb();
+  updateDamageVisibility();
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
@@ -485,7 +543,7 @@ function deleteAsset(id) {
   const data = ensureKeys(loadData());
   const a = data.assets.find(x => x.id === id);
   if (!a) return;
-  if (!confirm('Delete asset "' + a.name + '" (' + a.tag + ')?\nThis also removes its photos.')) return;
+  if (!confirm('Delete asset "' + a.name + '" (' + a.tag + ')?')) return;
   data.assets = data.assets.filter(x => x.id !== id);
   saveLocal(data);
   scheduleSync();
@@ -500,8 +558,11 @@ function clearForm() {
   document.getElementById('aCategory').selectedIndex = 0;
   document.getElementById('aLocation').selectedIndex = 0;
   document.getElementById('aStatus').selectedIndex = 0;
-  currentPhotos = [];
-  renderPhotoThumbs();
+  referencePhoto = null;
+  damagePhoto = null;
+  renderReferenceThumb();
+  renderDamageThumb();
+  updateDamageVisibility();
   document.getElementById('scanStatus').style.display = 'none';
 }
 
@@ -532,7 +593,7 @@ function render() {
   const statusClass = { active:'status-active', repair:'status-repair', retired:'status-retired', disposed:'status-disposed' };
 
   grid.innerHTML = list.map(a => {
-    const photo = (a.photos && a.photos[0]) ? '<img src="'+a.photos[0]+'" alt="" />' : (catIcon[a.category] || '📦');
+    const photo = a.referencePhoto ? '<img src="'+a.referencePhoto+'" alt="" />' : (catIcon[a.category] || '📦');
     const val = a.currValue || a.purchPrice || 0;
     return `<div class="asset-card">
       <div class="asset-photo">${photo}</div>
