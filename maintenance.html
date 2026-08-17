@@ -416,7 +416,7 @@ async function pullMaintFromServer() {
     setSyncStatus('saved');
   } catch (e) { setSyncStatus('offline'); }
 
-  // Also pull assets so the equipment dropdown can list them
+  // Also pull assets so the equipment dropdown lists them
   try {
     const res2 = await fetch(PANTRY_SERVER + '/assets');
     if (res2.ok) {
@@ -1024,7 +1024,6 @@ renderTasks();
 renderTempGrid();
 renderTempUnitList();
 
-// Pull from server, then re-populate dropdown and re-render
 pullMaintFromServer().then(() => {
   populateEquipmentDropdown();
   renderTasks();
