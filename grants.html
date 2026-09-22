@@ -3,12 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grant Writing · Maricopa Pantry</title>
+<title>Grant Writing · Maricopa Pantry & VINP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="pantry.css" />
 <style>
+  .org-picker {
+    display: flex; gap: var(--s2); background: var(--white);
+    border: 2px solid var(--red); border-radius: 8px;
+    padding: var(--s3); margin-bottom: var(--s4);
+    align-items: center; flex-wrap: wrap;
+  }
+  .org-picker .lbl { font-weight: 700; color: var(--red); font-family: 'Fraunces', serif; }
+  .org-btn {
+    padding: 10px 16px; border-radius: 6px; border: 2px solid var(--line);
+    background: var(--white); cursor: pointer; font-family: inherit;
+    font-size: 15px; font-weight: 600; color: var(--gray);
+    min-height: var(--tap-min);
+  }
+  .org-btn:hover { border-color: var(--red); }
+  .org-btn.active { background: var(--red); color: var(--white); border-color: var(--red); }
+
   .subtabs {
     display: flex; gap: 0; background: var(--white);
     border: 1px solid var(--line); border-radius: 8px;
@@ -48,6 +64,11 @@
     padding: var(--s4); border-radius: 8px; margin-top: var(--s4);
     white-space: pre-wrap; font-family: inherit; line-height: 1.6;
   }
+  .funder-section-title {
+    font-family: 'Fraunces', serif; font-size: 20px; font-weight: 700;
+    color: var(--black); margin: var(--s5) 0 var(--s3); padding-bottom: var(--s2);
+    border-bottom: 2px solid var(--red);
+  }
 </style>
 </head>
 <body>
@@ -62,6 +83,13 @@
 
 <div class="container">
 
+  <div class="org-picker">
+    <span class="lbl">Active Organization:</span>
+    <button class="org-btn active" data-org="mp" onclick="setActiveOrg('mp')">🥫 Maricopa Pantry</button>
+    <button class="org-btn" data-org="vinp" onclick="setActiveOrg('vinp')">🎖️ Veterans in Need Project</button>
+    <span class="small muted" style="margin-left:auto;">Each org has its own profile & pipeline.</span>
+  </div>
+
   <div class="subtabs">
     <button class="subtab active" onclick="showSubtab('profile', this)">📋 Org Profile</button>
     <button class="subtab" onclick="showSubtab('drafter', this)">✍️ Drafter</button>
@@ -74,15 +102,15 @@
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">Organization Profile</div>
-          <div class="card-subtitle">Fill this once — the drafter pulls from it for every grant.</div>
+          <div class="card-title" id="profile-title">Organization Profile</div>
+          <div class="card-subtitle">Fill this once per org — the drafter pulls from it for every grant.</div>
         </div>
       </div>
 
       <div class="form-grid-2">
         <div>
           <label>Legal name</label>
-          <input type="text" id="p-name" placeholder="Maricopa Pantry" />
+          <input type="text" id="p-name" />
         </div>
         <div>
           <label>EIN</label>
@@ -93,7 +121,7 @@
       <div class="form-grid-3">
         <div>
           <label>Founded (year)</label>
-          <input type="text" id="p-founded" placeholder="2019" />
+          <input type="text" id="p-founded" />
         </div>
         <div>
           <label>501(c)(3) status</label>
@@ -114,7 +142,7 @@
 
       <div class="form-grid-3">
         <div>
-          <label>Families served / year</label>
+          <label id="p-families-lbl">Families served / year</label>
           <input type="number" id="p-families" placeholder="0" />
         </div>
         <div>
@@ -122,7 +150,7 @@
           <input type="number" id="p-people" placeholder="0" />
         </div>
         <div>
-          <label>Pounds distributed / year</label>
+          <label id="p-pounds-lbl">Pounds distributed / year</label>
           <input type="number" id="p-pounds" placeholder="0" />
         </div>
       </div>
@@ -133,22 +161,22 @@
           <input type="number" id="p-budget" placeholder="0" />
         </div>
         <div>
-          <label>In-kind food value / year</label>
-          <input type="number" id="p-inkind" placeholder="From food banks" />
+          <label id="p-inkind-lbl">In-kind value / year</label>
+          <input type="number" id="p-inkind" placeholder="0" />
         </div>
       </div>
 
       <label>Service area</label>
-      <input type="text" id="p-area" placeholder="City of Maricopa, Pinal County, ZIPs 85138/85139" />
+      <input type="text" id="p-area" />
 
       <label>Programs & services</label>
-      <textarea id="p-programs" rows="3" placeholder="Weekly Saturday distribution, occasional Monday distributions, mobile pantry visits, holiday boxes, etc."></textarea>
+      <textarea id="p-programs" rows="3"></textarea>
 
       <label>Partner organizations</label>
-      <textarea id="p-partners" rows="2" placeholder="St. Mary's Food Bank Alliance, Midwest Food Bank, City of Mesa, ..."></textarea>
+      <textarea id="p-partners" rows="2"></textarea>
 
       <label>Key staff / leadership</label>
-      <textarea id="p-leadership" rows="2" placeholder="Board chair, ED, key volunteers (roles only, no personal info)"></textarea>
+      <textarea id="p-leadership" rows="2" placeholder="Roles only, no personal info"></textarea>
 
       <div class="form-grid-2">
         <div>
@@ -168,7 +196,7 @@
         </div>
         <div>
           <label>Website</label>
-          <input type="url" id="p-website" placeholder="maricopapantry.org" />
+          <input type="url" id="p-website" />
         </div>
       </div>
 
@@ -187,7 +215,7 @@
       <div class="card-header">
         <div>
           <div class="card-title">AI Grant Drafter</div>
-          <div class="card-subtitle">Uses your Org Profile automatically. Fill in what makes this grant unique.</div>
+          <div class="card-subtitle" id="drafter-subtitle">Uses the active org's profile automatically.</div>
         </div>
       </div>
 
@@ -214,10 +242,10 @@
       </div>
 
       <label>Funder name</label>
-      <input type="text" id="d-funder" placeholder="e.g., Arizona Community Foundation" />
+      <input type="text" id="d-funder" />
 
       <label>Grant / program name</label>
-      <input type="text" id="d-program" placeholder="e.g., CFSA Core Support" />
+      <input type="text" id="d-program" />
 
       <div class="form-grid-2">
         <div>
@@ -226,15 +254,15 @@
         </div>
         <div>
           <label>Project period</label>
-          <input type="text" id="d-period" placeholder="Jan–Dec 2027" />
+          <input type="text" id="d-period" />
         </div>
       </div>
 
       <label>Specific project or need (what this grant funds)</label>
-      <textarea id="d-project" rows="3" placeholder="Second walk-in refrigerator to expand cold storage as we move into the new warehouse..."></textarea>
+      <textarea id="d-project" rows="3"></textarea>
 
       <label>Funder priorities to emphasize (from their guidelines)</label>
-      <textarea id="d-priorities" rows="2" placeholder="Food security, rural communities, capacity building..."></textarea>
+      <textarea id="d-priorities" rows="2"></textarea>
 
       <div class="btn-row">
         <button class="btn btn-primary btn-large" onclick="runDraft()" id="draftBtn">✨ Generate Draft</button>
@@ -249,7 +277,13 @@
   <div id="pipeline" class="subpanel">
     <div class="card">
       <div class="card-header">
-        <div><div class="card-title">Grant Pipeline</div><div class="card-subtitle">Every grant you're working on or have applied to.</div></div>
+        <div><div class="card-title" id="pipeline-title">Grant Pipeline</div><div class="card-subtitle" id="pipeline-subtitle">Showing active org only.</div></div>
+        <div class="btn-row" style="margin:0;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;">
+            <input type="checkbox" id="showAllOrgs" onchange="renderPipeline()" style="width:auto;height:auto;margin:0;" />
+            Show both orgs
+          </label>
+        </div>
       </div>
 
       <div class="stat-grid">
@@ -264,7 +298,7 @@
       <div class="form-grid-2">
         <div>
           <label>Funder</label>
-          <input type="text" id="pipe-funder" placeholder="Foundation / agency name" />
+          <input type="text" id="pipe-funder" />
         </div>
         <div>
           <label>Program</label>
@@ -294,7 +328,7 @@
       </div>
 
       <label>Notes</label>
-      <input type="text" id="pipe-notes" placeholder="Contact person, next step, follow-up date" />
+      <input type="text" id="pipe-notes" />
 
       <div class="btn-row">
         <button class="btn btn-primary" onclick="savePipeline()">💾 Save</button>
@@ -309,7 +343,7 @@
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Funder</th><th>Program</th><th>Amount</th><th>Deadline</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Org</th><th>Funder</th><th>Program</th><th>Amount</th><th>Deadline</th><th>Status</th><th></th></tr></thead>
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
@@ -320,32 +354,27 @@
   <div id="funders" class="subpanel">
     <div class="card">
       <div class="card-header">
-        <div><div class="card-title">Arizona Food-Security Funders</div><div class="card-subtitle">Starter list — customize as you learn more.</div></div>
+        <div><div class="card-title">Funder Directory</div><div class="card-subtitle">Food-security funders + veteran-focused funders.</div></div>
       </div>
+
+      <div class="funder-section-title">🥫 Food Security / Community Basic Needs</div>
 
       <div class="funder-card">
         <h4>Arizona Community Foundation (ACF)</h4>
-        <div class="funder-meta">Statewide · Community grants, endowments, donor-advised funds</div>
-        <p>Multiple grant programs including community grants for food security. Deadlines rolling and cycle-based. Strong fit for capacity building.</p>
+        <div class="funder-meta">Statewide · Community grants, endowments</div>
+        <p>Multiple grant programs including community grants for food security. Strong fit for capacity building.</p>
         <a href="https://www.azfoundation.org" target="_blank">azfoundation.org →</a>
-      </div>
-
-      <div class="funder-card">
-        <h4>CFSA CORE Support (Community Foundation for Southern AZ)</h4>
-        <div class="funder-meta">Southern AZ · General operating support</div>
-        <p>Core operating grants — one of the few sources for unrestricted funding. Small nonprofits welcome.</p>
-        <a href="https://www.cfsaz.org" target="_blank">cfsaz.org →</a>
       </div>
 
       <div class="funder-card">
         <h4>Vitalyst Health Foundation</h4>
         <div class="funder-meta">Statewide · Health equity, food access</div>
-        <p>Food-as-medicine and community food access are priorities. Alignment with SDoH framing helps.</p>
+        <p>Food-as-medicine and community food access. SDoH framing helps.</p>
         <a href="https://vitalysthealth.org" target="_blank">vitalysthealth.org →</a>
       </div>
 
       <div class="funder-card">
-        <h4>Piper Trust (Virginia G. Piper Charitable Trust)</h4>
+        <h4>Piper Trust</h4>
         <div class="funder-meta">Maricopa County · Basic needs, capacity</div>
         <p>Larger foundation with a basic-needs focus. Competitive but attainable with strong narrative.</p>
         <a href="https://pipertrust.org" target="_blank">pipertrust.org →</a>
@@ -353,33 +382,85 @@
 
       <div class="funder-card">
         <h4>Feeding America — Local Food Bank Grants (via St. Mary's)</h4>
-        <div class="funder-meta">Through your partner network</div>
-        <p>Ask St. Mary's Food Bank Alliance about pass-through Feeding America grants for member agencies. Often available for equipment.</p>
+        <div class="funder-meta">Through partner network</div>
+        <p>Ask St. Mary's about pass-through Feeding America grants for member agencies. Often available for equipment.</p>
       </div>
 
       <div class="funder-card">
         <h4>Walmart Community Grants — Local</h4>
-        <div class="funder-meta">Local Walmart & Sam's Club stores · $250–$5,000</div>
-        <p>Apply through each local store manager. Quick turnaround, good for one-time needs (freezer, shelving, distribution supplies).</p>
+        <div class="funder-meta">Local Walmart & Sam's Club · $250–$5,000</div>
+        <p>Apply through each local store manager. Quick turnaround, good for one-time needs.</p>
         <a href="https://walmart.org/how-we-give/local-community-grants" target="_blank">walmart.org →</a>
       </div>
 
       <div class="funder-card">
         <h4>Kroger / Fry's Zero Hunger Zero Waste</h4>
         <div class="funder-meta">Local + national · Food rescue focus</div>
-        <p>Fry's is Kroger in AZ. Food rescue partnerships + community grants. Reach out to your local store's community engagement contact.</p>
+        <p>Food rescue partnerships + community grants. Contact local store community engagement.</p>
       </div>
+
+      <div class="funder-section-title">🎖️ Veteran-Focused Funders</div>
+
+      <div class="funder-card">
+        <h4>Bob Woodruff Foundation</h4>
+        <div class="funder-meta">National · Veteran & military family programs</div>
+        <p>Funds programs that address the unmet needs of veterans. Focus areas include food insecurity, employment, mental health, and family support.</p>
+        <a href="https://bobwoodrufffoundation.org" target="_blank">bobwoodrufffoundation.org →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>Wounded Warrior Project — Community Impact Grants</h4>
+        <div class="funder-meta">National · Direct veteran service programs</div>
+        <p>Grants to nonprofits serving post-9/11 veterans. Focus on economic empowerment, mental health, physical health.</p>
+        <a href="https://www.woundedwarriorproject.org" target="_blank">woundedwarriorproject.org →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>Newman's Own Foundation — Veteran Grants</h4>
+        <div class="funder-meta">National · Cycle-based</div>
+        <p>Funds nonprofits serving veterans and military families. Multi-year support possible.</p>
+        <a href="https://newmansownfoundation.org" target="_blank">newmansownfoundation.org →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>Home Depot Foundation — Veteran Housing Grants</h4>
+        <div class="funder-meta">National · Housing focus</div>
+        <p>Focus on veteran housing and community development. Product donations + cash grants.</p>
+        <a href="https://corporate.homedepot.com/foundation" target="_blank">homedepot.com/foundation →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>USAA Foundation</h4>
+        <div class="funder-meta">National · Military families</div>
+        <p>Financial readiness, resilience, and emergency assistance for military families and veterans.</p>
+        <a href="https://www.usaa.com/inet/wc/usaa-foundation" target="_blank">usaa.com/foundation →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>Disabled American Veterans (DAV) Charitable Service Trust</h4>
+        <div class="funder-meta">National · Direct services to disabled vets</div>
+        <p>Funds programs providing food, shelter, transportation, and rehabilitation for disabled veterans.</p>
+        <a href="https://www.cst.dav.org" target="_blank">cst.dav.org →</a>
+      </div>
+
+      <div class="funder-section-title">📍 Local / Both Orgs</div>
 
       <div class="funder-card">
         <h4>City of Maricopa — Community Grants</h4>
         <div class="funder-meta">Municipal · Local programs</div>
-        <p>Check the city's annual community grant cycle. As a local nonprofit serving Maricopa residents, alignment is strong.</p>
+        <p>Annual community grant cycle. Both orgs serve Maricopa residents — alignment is strong for both.</p>
       </div>
 
       <div class="funder-card">
         <h4>Pinal County — CDBG / community funds</h4>
         <div class="funder-meta">County · Federal pass-through + local funds</div>
-        <p>Community Development Block Grant pass-throughs for food security infrastructure. Ask county community services department.</p>
+        <p>CDBG for food security infrastructure or veteran services. Contact county community services department.</p>
+      </div>
+
+      <div class="funder-card">
+        <h4>Arizona Community Foundation — Field-of-Interest Funds</h4>
+        <div class="funder-meta">Statewide</div>
+        <p>ACF has both food-security and veteran-focused donor-advised funds. Worth checking both directions.</p>
       </div>
     </div>
   </div>
@@ -392,9 +473,22 @@
 const PANTRY_SERVER = 'https://api.little6llc.com:3001/pantry';
 const STORAGE_KEY = 'maricopa_pantry_v1';
 
+// Fixed org catalog. Adding a new org later is a code change here.
+const ORGS = {
+  mp:   { name: 'Maricopa Pantry',            type: 'food',     shortName: 'Pantry' },
+  vinp: { name: 'Veterans in Need Project',   type: 'veterans', shortName: 'VINP' }
+};
+
+let activeOrgId = 'mp';
+
 function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); } }
-function defaultData() { return { grantProfile: {}, grantPipeline: [], settings: {} }; }
-function ensureKeys(d) { d.grantProfile = d.grantProfile || {}; d.grantPipeline = d.grantPipeline || []; return d; }
+function defaultData() { return { grantData: { orgs: {}, pipeline: [] }, settings: {} }; }
+function ensureKeys(d) {
+  d.grantData = d.grantData || { orgs: {}, pipeline: [] };
+  d.grantData.orgs = d.grantData.orgs || {};
+  d.grantData.pipeline = d.grantData.pipeline || [];
+  return d;
+}
 function saveLocal(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){} }
 function showToast(msg, isErr) {
   const t = document.getElementById('toast'); t.textContent = msg;
@@ -413,6 +507,8 @@ function setSyncStatus(state) {
 }
 
 // ---- SERVER SYNC ----
+// Stored on server as: orgProfile = { orgs:{mp:{...}, vinp:{...}}, pipeline: [] }
+// (Keeping the server field name "orgProfile" for compatibility with existing endpoint)
 let pushTimer = null;
 function scheduleSync() {
   clearTimeout(pushTimer);
@@ -423,7 +519,11 @@ function scheduleSync() {
       await fetch(PANTRY_SERVER + '/grants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orgProfile: d.grantProfile, pipeline: d.grantPipeline, drafts: [] })
+        body: JSON.stringify({
+          orgProfile: { orgs: d.grantData.orgs, activeOrgId: activeOrgId },
+          pipeline: d.grantData.pipeline,
+          drafts: []
+        })
       });
       setSyncStatus('saved');
     } catch (e) { setSyncStatus('offline'); }
@@ -435,11 +535,55 @@ async function pullFromServer() {
     if (!res.ok) throw new Error('server');
     const sd = await res.json();
     const local = ensureKeys(loadData());
-    local.grantProfile = sd.orgProfile || {};
-    local.grantPipeline = sd.pipeline || [];
+    const op = sd.orgProfile || {};
+
+    // Handle old single-org shape by migrating it into the mp slot
+    if (op.orgs) {
+      local.grantData.orgs = op.orgs;
+    } else if (op.name || op.mission) {
+      // Old flat shape - migrate to Maricopa Pantry
+      local.grantData.orgs = { mp: op };
+    } else {
+      local.grantData.orgs = {};
+    }
+
+    // Pipeline: tag legacy entries with mp if they have no orgId
+    local.grantData.pipeline = (sd.pipeline || []).map(p => {
+      if (!p.orgId) p.orgId = 'mp';
+      return p;
+    });
+
     saveLocal(local);
     setSyncStatus('saved');
   } catch (e) { setSyncStatus('offline'); }
+}
+
+// ---- ORG SELECTOR ----
+function setActiveOrg(orgId) {
+  saveProfileFromForm();  // preserve edits on the currently active org
+  activeOrgId = orgId;
+  document.querySelectorAll('.org-btn').forEach(b => b.classList.toggle('active', b.dataset.org === orgId));
+  applyOrgToUI();
+  loadProfileToForm();
+  renderPipeline();
+}
+
+function applyOrgToUI() {
+  const org = ORGS[activeOrgId];
+  document.getElementById('profile-title').textContent = 'Organization Profile — ' + org.name;
+  document.getElementById('drafter-subtitle').textContent = 'Drafting for ' + org.name + '. Uses this org\'s profile automatically.';
+  document.getElementById('pipeline-title').textContent = 'Grant Pipeline — ' + org.name;
+
+  // Adapt labels by org type
+  if (org.type === 'veterans') {
+    document.getElementById('p-families-lbl').textContent = 'Veterans served / year';
+    document.getElementById('p-pounds-lbl').textContent = 'Direct services delivered / year';
+    document.getElementById('p-inkind-lbl').textContent = 'In-kind value / year';
+  } else {
+    document.getElementById('p-families-lbl').textContent = 'Families served / year';
+    document.getElementById('p-pounds-lbl').textContent = 'Pounds distributed / year';
+    document.getElementById('p-inkind-lbl').textContent = 'In-kind food value / year';
+  }
 }
 
 // ---- SUB-TABS ----
@@ -456,31 +600,37 @@ const PROFILE_FIELDS = ['name','ein','founded','status','uei','mission','familie
 
 function loadProfileToForm() {
   const data = ensureKeys(loadData());
-  const p = data.grantProfile || {};
+  const p = data.grantData.orgs[activeOrgId] || {};
   PROFILE_FIELDS.forEach(f => {
     const el = document.getElementById('p-' + f);
-    if (el && p[f] != null) el.value = p[f];
+    if (el) el.value = p[f] != null ? p[f] : '';
   });
+  // If empty, pre-fill legal name from catalog
+  if (!p.name) document.getElementById('p-name').value = ORGS[activeOrgId].name;
 }
-function saveProfile() {
+function saveProfileFromForm() {
   const data = ensureKeys(loadData());
   const p = {};
   PROFILE_FIELDS.forEach(f => {
     const el = document.getElementById('p-' + f);
     if (el) p[f] = el.value;
   });
-  data.grantProfile = p;
+  data.grantData.orgs[activeOrgId] = p;
   saveLocal(data);
+}
+function saveProfile() {
+  saveProfileFromForm();
   scheduleSync();
-  showToast('Profile saved');
+  showToast('Profile saved for ' + ORGS[activeOrgId].shortName);
 }
 
 // ---- DRAFTER ----
 async function runDraft() {
   const data = ensureKeys(loadData());
-  const profile = data.grantProfile || {};
+  const profile = data.grantData.orgs[activeOrgId] || {};
   if (!profile.name) { showToast('Fill out Org Profile first', true); return; }
 
+  const org = ORGS[activeOrgId];
   const type = document.getElementById('d-type').value;
   const length = document.getElementById('d-length').value;
   const funder = document.getElementById('d-funder').value.trim();
@@ -492,9 +642,13 @@ async function runDraft() {
 
   const typeLabel = { loi:'letter of inquiry', full:'full proposal narrative', budget:'budget narrative', thanks:'thank-you letter', report:'grant progress report' }[type];
 
-  const system = "You are a professional grant writer for a small-town food pantry (Maricopa Pantry) in Maricopa, Arizona. Write in warm, credible, mission-driven prose. Concrete numbers matter. Avoid buzzwords. Avoid making up statistics — use only what's given.";
+  const orgContext = org.type === 'veterans'
+    ? "The organization serves veterans and their families in Maricopa, Arizona."
+    : "The organization is a small-town food pantry in Maricopa, Arizona.";
 
-  const userMessage = `Write a ${typeLabel} of approximately ${length} words.
+  const system = "You are a professional grant writer for a nonprofit. " + orgContext + " Write in warm, credible, mission-driven prose. Concrete numbers matter. Avoid buzzwords. Do not fabricate statistics — use only what is provided.";
+
+  const userMessage = `Write a ${typeLabel} of approximately ${length} words for ${profile.name}.
 
 ORGANIZATION PROFILE:
 ${JSON.stringify(profile, null, 2)}
@@ -507,7 +661,7 @@ Project period: ${period || '(not specified)'}
 Specific project/need: ${project || '(not specified)'}
 Funder priorities to emphasize: ${priorities || '(none specified)'}
 
-Write the ${typeLabel} now. Use the organization's real numbers. Match the funder's priorities where they align with the pantry's actual work. Do not fabricate statistics or names.`;
+Write the ${typeLabel} now. Use the organization's real numbers. Match the funder's priorities where they align with the org's actual work. Do not fabricate statistics or names.`;
 
   const btn = document.getElementById('draftBtn');
   btn.disabled = true;
@@ -545,7 +699,7 @@ function downloadDraft() {
   const blob = new Blob([t.textContent], {type: 'text/plain'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'grant_draft_' + new Date().toISOString().slice(0,10) + '.txt';
+  a.href = url; a.download = ORGS[activeOrgId].shortName + '_draft_' + new Date().toISOString().slice(0,10) + '.txt';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -560,17 +714,20 @@ function savePipeline() {
   if (!funder) { showToast('Funder name required', true); return; }
   const data = ensureKeys(loadData());
   const id = document.getElementById('pipeEditId').value || uuid();
+  const existing = data.grantData.pipeline.find(x => x.id === id);
   const entry = {
-    id, funder,
+    id,
+    orgId: existing ? existing.orgId : activeOrgId,
+    funder,
     program: document.getElementById('pipe-program').value.trim(),
     amount: parseFloat(document.getElementById('pipe-amount').value) || 0,
     deadline: document.getElementById('pipe-deadline').value,
     status: document.getElementById('pipe-status').value,
     notes: document.getElementById('pipe-notes').value.trim()
   };
-  const ex = data.grantPipeline.findIndex(x => x.id === id);
-  if (ex >= 0) data.grantPipeline[ex] = entry;
-  else data.grantPipeline.push(entry);
+  const ex = data.grantData.pipeline.findIndex(x => x.id === id);
+  if (ex >= 0) data.grantData.pipeline[ex] = entry;
+  else data.grantData.pipeline.push(entry);
   saveLocal(data);
   scheduleSync();
   showToast('Saved');
@@ -579,7 +736,7 @@ function savePipeline() {
 }
 function editPipeline(id) {
   const data = ensureKeys(loadData());
-  const p = data.grantPipeline.find(x => x.id === id); if (!p) return;
+  const p = data.grantData.pipeline.find(x => x.id === id); if (!p) return;
   document.getElementById('pipeEditId').value = p.id;
   document.getElementById('pipe-funder').value = p.funder || '';
   document.getElementById('pipe-program').value = p.program || '';
@@ -592,7 +749,7 @@ function editPipeline(id) {
 function deletePipeline(id) {
   if (!confirm('Delete this pipeline entry?')) return;
   const data = ensureKeys(loadData());
-  data.grantPipeline = data.grantPipeline.filter(x => x.id !== id);
+  data.grantData.pipeline = data.grantData.pipeline.filter(x => x.id !== id);
   saveLocal(data);
   scheduleSync();
   renderPipeline();
@@ -604,7 +761,12 @@ function clearPipeForm() {
 }
 function renderPipeline() {
   const data = ensureKeys(loadData());
-  const list = data.grantPipeline.slice().sort((a,b) => (a.deadline||'').localeCompare(b.deadline||''));
+  const showAll = document.getElementById('showAllOrgs').checked;
+  let list = data.grantData.pipeline.slice();
+  if (!showAll) list = list.filter(x => x.orgId === activeOrgId);
+  list.sort((a,b) => (a.deadline||'').localeCompare(b.deadline||''));
+
+  document.getElementById('pipeline-subtitle').textContent = showAll ? 'Showing both organizations.' : 'Showing ' + ORGS[activeOrgId].shortName + ' only.';
 
   document.getElementById('stat-total').textContent = list.length;
   const pending = list.filter(x => x.status === 'idea' || x.status === 'drafting' || x.status === 'submitted').length;
@@ -616,26 +778,31 @@ function renderPipeline() {
   document.getElementById('stat-requested').textContent = '$' + Math.round(requested).toLocaleString();
 
   const tbody = document.getElementById('pipeBody');
-  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No pipeline entries yet.</td></tr>'; return; }
+  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No pipeline entries yet.</td></tr>'; return; }
   const statLabel = { idea:'Idea', drafting:'Drafting', submitted:'Submitted', awarded:'Awarded', declined:'Declined' };
-  tbody.innerHTML = list.map(p => `<tr>
-    <td><strong>${escapeHtml(p.funder)}</strong>${p.notes ? '<br><span class="small muted">' + escapeHtml(p.notes) + '</span>' : ''}</td>
-    <td>${escapeHtml(p.program||'')}</td>
-    <td>$${(p.amount||0).toLocaleString()}</td>
-    <td>${fmtDate(p.deadline)}</td>
-    <td><span class="pipeline-status st-${p.status}">${statLabel[p.status]||p.status}</span></td>
-    <td style="white-space:nowrap;">
-      <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="editPipeline('${p.id}')">✎</button>
-      <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="deletePipeline('${p.id}')">✕</button>
-    </td>
-  </tr>`).join('');
+  tbody.innerHTML = list.map(p => {
+    const orgTag = (ORGS[p.orgId] && ORGS[p.orgId].shortName) || p.orgId;
+    return `<tr>
+      <td><span class="badge badge-neutral">${escapeHtml(orgTag)}</span></td>
+      <td><strong>${escapeHtml(p.funder)}</strong>${p.notes ? '<br><span class="small muted">' + escapeHtml(p.notes) + '</span>' : ''}</td>
+      <td>${escapeHtml(p.program||'')}</td>
+      <td>$${(p.amount||0).toLocaleString()}</td>
+      <td>${fmtDate(p.deadline)}</td>
+      <td><span class="pipeline-status st-${p.status}">${statLabel[p.status]||p.status}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="editPipeline('${p.id}')">✎</button>
+        <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="deletePipeline('${p.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function exportPipelineCSV() {
   const data = ensureKeys(loadData());
-  let csv = 'Funder,Program,Amount,Deadline,Status,Notes\n';
-  data.grantPipeline.forEach(p => {
-    csv += `"${p.funder}","${p.program||''}",${p.amount||0},${p.deadline||''},${p.status},"${(p.notes||'').replace(/"/g,'""')}"\n`;
+  let csv = 'Organization,Funder,Program,Amount,Deadline,Status,Notes\n';
+  data.grantData.pipeline.forEach(p => {
+    const orgName = (ORGS[p.orgId] && ORGS[p.orgId].name) || p.orgId || '';
+    csv += `"${orgName}","${p.funder}","${p.program||''}",${p.amount||0},${p.deadline||''},${p.status},"${(p.notes||'').replace(/"/g,'""')}"\n`;
   });
   const blob = new Blob([csv], {type:'text/csv'});
   const url = URL.createObjectURL(blob);
@@ -647,6 +814,7 @@ function exportPipelineCSV() {
 
 // ---- INIT ----
 setSyncStatus('saving');
+applyOrgToUI();
 pullFromServer().then(() => {
   loadProfileToForm();
   renderPipeline();
