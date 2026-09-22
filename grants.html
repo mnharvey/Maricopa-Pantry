@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Grant Writing · Maricopa Pantry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="pantry.css" />
+<style>
+  .subtabs {
+    display: flex; gap: 0; background: var(--white);
+    border: 1px solid var(--line); border-radius: 8px;
+    overflow: hidden; margin-bottom: var(--s5);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); flex-wrap: wrap;
+  }
+  .subtab {
+    flex: 1; padding: var(--s4); border: none; background: var(--white);
+    font-family: inherit; font-size: var(--font-body); font-weight: 600;
+    color: var(--gray); cursor: pointer; min-height: var(--tap-min);
+    border-bottom: 3px solid transparent; min-width: 120px;
+  }
+  .subtab:hover { background: var(--cream); }
+  .subtab.active { color: var(--red); border-bottom-color: var(--red); background: var(--red-soft); }
+  .subpanel { display: none; }
+  .subpanel.active { display: block; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s3); }
+  @media (max-width: 700px) { .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; } }
+  .funder-card {
+    background: var(--white); border: 1px solid var(--line); border-radius: 8px;
+    padding: var(--s4); margin-bottom: var(--s3);
+  }
+  .funder-card h4 { margin: 0 0 var(--s2) 0; font-family: 'Fraunces', serif; color: var(--red); }
+  .funder-meta { font-size: 13px; color: var(--gray); margin-bottom: var(--s2); }
+  .pipeline-status {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+  }
+  .st-idea { background: #ececea; color: var(--gray); }
+  .st-drafting { background: var(--amber-soft); color: var(--amber); }
+  .st-submitted { background: var(--blue-soft, #e3f0fd); color: #1e6cbc; }
+  .st-awarded { background: var(--green-soft); color: var(--green); }
+  .st-declined { background: var(--red-soft); color: var(--red-dark); }
+  .draft-output {
+    background: var(--cream-warm); border-left: 4px solid var(--red);
+    padding: var(--s4); border-radius: 8px; margin-top: var(--s4);
+    white-space: pre-wrap; font-family: inherit; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="header-back" href="index.html">← Home</a>
+  <div class="header-titles">
+    <div class="header-title">Grant Writing</div>
+    <div class="header-sub">Profile · Drafter · Pipeline · Funders &nbsp; <span id="syncStatus" style="font-weight:600;"></span></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="subtabs">
+    <button class="subtab active" onclick="showSubtab('profile', this)">📋 Org Profile</button>
+    <button class="subtab" onclick="showSubtab('drafter', this)">✍️ Drafter</button>
+    <button class="subtab" onclick="showSubtab('pipeline', this)">📊 Pipeline</button>
+    <button class="subtab" onclick="showSubtab('funders', this)">🔍 Funders</button>
+  </div>
+
+  <!-- ============ ORG PROFILE ============ -->
+  <div id="profile" class="subpanel active">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Organization Profile</div>
+          <div class="card-subtitle">Fill this once — the drafter pulls from it for every grant.</div>
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div>
+          <label>Legal name</label>
+          <input type="text" id="p-name" placeholder="Maricopa Pantry" />
+        </div>
+        <div>
+          <label>EIN</label>
+          <input type="text" id="p-ein" placeholder="XX-XXXXXXX" />
+        </div>
+      </div>
+
+      <div class="form-grid-3">
+        <div>
+          <label>Founded (year)</label>
+          <input type="text" id="p-founded" placeholder="2019" />
+        </div>
+        <div>
+          <label>501(c)(3) status</label>
+          <select id="p-status">
+            <option>Confirmed</option>
+            <option>Pending</option>
+            <option>Fiscal sponsor</option>
+          </select>
+        </div>
+        <div>
+          <label>DUNS / UEI</label>
+          <input type="text" id="p-uei" placeholder="For federal grants" />
+        </div>
+      </div>
+
+      <label>Mission statement</label>
+      <textarea id="p-mission" rows="3" placeholder="One or two sentences about who you serve and why."></textarea>
+
+      <div class="form-grid-3">
+        <div>
+          <label>Families served / year</label>
+          <input type="number" id="p-families" placeholder="0" />
+        </div>
+        <div>
+          <label>Individuals served / year</label>
+          <input type="number" id="p-people" placeholder="0" />
+        </div>
+        <div>
+          <label>Pounds distributed / year</label>
+          <input type="number" id="p-pounds" placeholder="0" />
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div>
+          <label>Annual budget</label>
+          <input type="number" id="p-budget" placeholder="0" />
+        </div>
+        <div>
+          <label>In-kind food value / year</label>
+          <input type="number" id="p-inkind" placeholder="From food banks" />
+        </div>
+      </div>
+
+      <label>Service area</label>
+      <input type="text" id="p-area" placeholder="City of Maricopa, Pinal County, ZIPs 85138/85139" />
+
+      <label>Programs & services</label>
+      <textarea id="p-programs" rows="3" placeholder="Weekly Saturday distribution, occasional Monday distributions, mobile pantry visits, holiday boxes, etc."></textarea>
+
+      <label>Partner organizations</label>
+      <textarea id="p-partners" rows="2" placeholder="St. Mary's Food Bank Alliance, Midwest Food Bank, City of Mesa, ..."></textarea>
+
+      <label>Key staff / leadership</label>
+      <textarea id="p-leadership" rows="2" placeholder="Board chair, ED, key volunteers (roles only, no personal info)"></textarea>
+
+      <div class="form-grid-2">
+        <div>
+          <label>Contact name</label>
+          <input type="text" id="p-contact" />
+        </div>
+        <div>
+          <label>Contact email</label>
+          <input type="email" id="p-email" />
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div>
+          <label>Phone</label>
+          <input type="tel" id="p-phone" />
+        </div>
+        <div>
+          <label>Website</label>
+          <input type="url" id="p-website" placeholder="maricopapantry.org" />
+        </div>
+      </div>
+
+      <label>Address</label>
+      <input type="text" id="p-address" />
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-large" onclick="saveProfile()">💾 Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DRAFTER ============ -->
+  <div id="drafter" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">AI Grant Drafter</div>
+          <div class="card-subtitle">Uses your Org Profile automatically. Fill in what makes this grant unique.</div>
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div>
+          <label>Draft type</label>
+          <select id="d-type">
+            <option value="loi">Letter of Inquiry (LOI)</option>
+            <option value="full">Full proposal narrative</option>
+            <option value="budget">Budget narrative</option>
+            <option value="thanks">Thank-you letter</option>
+            <option value="report">Grant report / update</option>
+          </select>
+        </div>
+        <div>
+          <label>Word count target</label>
+          <select id="d-length">
+            <option value="300">Short (~300 words)</option>
+            <option value="600" selected>Standard (~600 words)</option>
+            <option value="1000">Long (~1000 words)</option>
+            <option value="1500">Very long (~1500 words)</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Funder name</label>
+      <input type="text" id="d-funder" placeholder="e.g., Arizona Community Foundation" />
+
+      <label>Grant / program name</label>
+      <input type="text" id="d-program" placeholder="e.g., CFSA Core Support" />
+
+      <div class="form-grid-2">
+        <div>
+          <label>Amount requested ($)</label>
+          <input type="number" id="d-amount" placeholder="0" />
+        </div>
+        <div>
+          <label>Project period</label>
+          <input type="text" id="d-period" placeholder="Jan–Dec 2027" />
+        </div>
+      </div>
+
+      <label>Specific project or need (what this grant funds)</label>
+      <textarea id="d-project" rows="3" placeholder="Second walk-in refrigerator to expand cold storage as we move into the new warehouse..."></textarea>
+
+      <label>Funder priorities to emphasize (from their guidelines)</label>
+      <textarea id="d-priorities" rows="2" placeholder="Food security, rural communities, capacity building..."></textarea>
+
+      <div class="btn-row">
+        <button class="btn btn-primary btn-large" onclick="runDraft()" id="draftBtn">✨ Generate Draft</button>
+        <button class="btn btn-neutral btn-large" onclick="clearDraft()">Clear</button>
+      </div>
+
+      <div id="draftResult" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ============ PIPELINE ============ -->
+  <div id="pipeline" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Grant Pipeline</div><div class="card-subtitle">Every grant you're working on or have applied to.</div></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total Grants</div></div>
+        <div class="stat"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending</div></div>
+        <div class="stat ok"><div class="stat-value" id="stat-awarded">$0</div><div class="stat-label">Awarded YTD</div></div>
+        <div class="stat"><div class="stat-value" id="stat-requested">$0</div><div class="stat-label">Requested</div></div>
+      </div>
+
+      <input type="hidden" id="pipeEditId" />
+
+      <div class="form-grid-2">
+        <div>
+          <label>Funder</label>
+          <input type="text" id="pipe-funder" placeholder="Foundation / agency name" />
+        </div>
+        <div>
+          <label>Program</label>
+          <input type="text" id="pipe-program" />
+        </div>
+      </div>
+
+      <div class="form-grid-3">
+        <div>
+          <label>Amount requested</label>
+          <input type="number" id="pipe-amount" placeholder="0" />
+        </div>
+        <div>
+          <label>Deadline</label>
+          <input type="date" id="pipe-deadline" />
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="pipe-status">
+            <option value="idea">Idea</option>
+            <option value="drafting">Drafting</option>
+            <option value="submitted">Submitted</option>
+            <option value="awarded">Awarded</option>
+            <option value="declined">Declined</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Notes</label>
+      <input type="text" id="pipe-notes" placeholder="Contact person, next step, follow-up date" />
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="savePipeline()">💾 Save</button>
+        <button class="btn btn-neutral" onclick="clearPipeForm()">Clear</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Pipeline List</div></div>
+        <button class="btn btn-neutral" onclick="exportPipelineCSV()">📊 CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Funder</th><th>Program</th><th>Amount</th><th>Deadline</th><th>Status</th><th></th></tr></thead>
+          <tbody id="pipeBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FUNDERS ============ -->
+  <div id="funders" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Arizona Food-Security Funders</div><div class="card-subtitle">Starter list — customize as you learn more.</div></div>
+      </div>
+
+      <div class="funder-card">
+        <h4>Arizona Community Foundation (ACF)</h4>
+        <div class="funder-meta">Statewide · Community grants, endowments, donor-advised funds</div>
+        <p>Multiple grant programs including community grants for food security. Deadlines rolling and cycle-based. Strong fit for capacity building.</p>
+        <a href="https://www.azfoundation.org" target="_blank">azfoundation.org →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>CFSA CORE Support (Community Foundation for Southern AZ)</h4>
+        <div class="funder-meta">Southern AZ · General operating support</div>
+        <p>Core operating grants — one of the few sources for unrestricted funding. Small nonprofits welcome.</p>
+        <a href="https://www.cfsaz.org" target="_blank">cfsaz.org →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>Vitalyst Health Foundation</h4>
+        <div class="funder-meta">Statewide · Health equity, food access</div>
+        <p>Food-as-medicine and community food access are priorities. Alignment with SDoH framing helps.</p>
+        <a href="https://vitalysthealth.org" target="_blank">vitalysthealth.org →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>Piper Trust (Virginia G. Piper Charitable Trust)</h4>
+        <div class="funder-meta">Maricopa County · Basic needs, capacity</div>
+        <p>Larger foundation with a basic-needs focus. Competitive but attainable with strong narrative.</p>
+        <a href="https://pipertrust.org" target="_blank">pipertrust.org →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>Feeding America — Local Food Bank Grants (via St. Mary's)</h4>
+        <div class="funder-meta">Through your partner network</div>
+        <p>Ask St. Mary's Food Bank Alliance about pass-through Feeding America grants for member agencies. Often available for equipment.</p>
+      </div>
+
+      <div class="funder-card">
+        <h4>Walmart Community Grants — Local</h4>
+        <div class="funder-meta">Local Walmart & Sam's Club stores · $250–$5,000</div>
+        <p>Apply through each local store manager. Quick turnaround, good for one-time needs (freezer, shelving, distribution supplies).</p>
+        <a href="https://walmart.org/how-we-give/local-community-grants" target="_blank">walmart.org →</a>
+      </div>
+
+      <div class="funder-card">
+        <h4>Kroger / Fry's Zero Hunger Zero Waste</h4>
+        <div class="funder-meta">Local + national · Food rescue focus</div>
+        <p>Fry's is Kroger in AZ. Food rescue partnerships + community grants. Reach out to your local store's community engagement contact.</p>
+      </div>
+
+      <div class="funder-card">
+        <h4>City of Maricopa — Community Grants</h4>
+        <div class="funder-meta">Municipal · Local programs</div>
+        <p>Check the city's annual community grant cycle. As a local nonprofit serving Maricopa residents, alignment is strong.</p>
+      </div>
+
+      <div class="funder-card">
+        <h4>Pinal County — CDBG / community funds</h4>
+        <div class="funder-meta">County · Federal pass-through + local funds</div>
+        <p>Community Development Block Grant pass-throughs for food security infrastructure. Ask county community services department.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const PANTRY_SERVER = 'https://api.little6llc.com:3001/pantry';
+const STORAGE_KEY = 'maricopa_pantry_v1';
+
+function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); } }
+function defaultData() { return { grantProfile: {}, grantPipeline: [], settings: {} }; }
+function ensureKeys(d) { d.grantProfile = d.grantProfile || {}; d.grantPipeline = d.grantPipeline || []; return d; }
+function saveLocal(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){} }
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 2500);
+}
+function uuid() { return 'g-' + Date.now() + '-' + Math.random().toString(36).slice(2,7); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(s){ if(!s) return '—'; try { return new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch(e){ return s; } }
+
+function setSyncStatus(state) {
+  const el = document.getElementById('syncStatus'); if (!el) return;
+  if (state === 'saved') { el.textContent = '☁️ Saved'; el.style.color = 'var(--green)'; }
+  else if (state === 'offline') { el.textContent = '⚠️ Offline'; el.style.color = 'var(--amber)'; }
+  else if (state === 'saving') { el.textContent = '☁️ Saving…'; el.style.color = 'var(--gray)'; }
+}
+
+// ---- SERVER SYNC ----
+let pushTimer = null;
+function scheduleSync() {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    setSyncStatus('saving');
+    try {
+      const d = ensureKeys(loadData());
+      await fetch(PANTRY_SERVER + '/grants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgProfile: d.grantProfile, pipeline: d.grantPipeline, drafts: [] })
+      });
+      setSyncStatus('saved');
+    } catch (e) { setSyncStatus('offline'); }
+  }, 600);
+}
+async function pullFromServer() {
+  try {
+    const res = await fetch(PANTRY_SERVER + '/grants');
+    if (!res.ok) throw new Error('server');
+    const sd = await res.json();
+    const local = ensureKeys(loadData());
+    local.grantProfile = sd.orgProfile || {};
+    local.grantPipeline = sd.pipeline || [];
+    saveLocal(local);
+    setSyncStatus('saved');
+  } catch (e) { setSyncStatus('offline'); }
+}
+
+// ---- SUB-TABS ----
+function showSubtab(id, btn) {
+  document.querySelectorAll('.subpanel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.subtab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'pipeline') renderPipeline();
+}
+
+// ---- ORG PROFILE ----
+const PROFILE_FIELDS = ['name','ein','founded','status','uei','mission','families','people','pounds','budget','inkind','area','programs','partners','leadership','contact','email','phone','website','address'];
+
+function loadProfileToForm() {
+  const data = ensureKeys(loadData());
+  const p = data.grantProfile || {};
+  PROFILE_FIELDS.forEach(f => {
+    const el = document.getElementById('p-' + f);
+    if (el && p[f] != null) el.value = p[f];
+  });
+}
+function saveProfile() {
+  const data = ensureKeys(loadData());
+  const p = {};
+  PROFILE_FIELDS.forEach(f => {
+    const el = document.getElementById('p-' + f);
+    if (el) p[f] = el.value;
+  });
+  data.grantProfile = p;
+  saveLocal(data);
+  scheduleSync();
+  showToast('Profile saved');
+}
+
+// ---- DRAFTER ----
+async function runDraft() {
+  const data = ensureKeys(loadData());
+  const profile = data.grantProfile || {};
+  if (!profile.name) { showToast('Fill out Org Profile first', true); return; }
+
+  const type = document.getElementById('d-type').value;
+  const length = document.getElementById('d-length').value;
+  const funder = document.getElementById('d-funder').value.trim();
+  const program = document.getElementById('d-program').value.trim();
+  const amount = document.getElementById('d-amount').value;
+  const period = document.getElementById('d-period').value.trim();
+  const project = document.getElementById('d-project').value.trim();
+  const priorities = document.getElementById('d-priorities').value.trim();
+
+  const typeLabel = { loi:'letter of inquiry', full:'full proposal narrative', budget:'budget narrative', thanks:'thank-you letter', report:'grant progress report' }[type];
+
+  const system = "You are a professional grant writer for a small-town food pantry (Maricopa Pantry) in Maricopa, Arizona. Write in warm, credible, mission-driven prose. Concrete numbers matter. Avoid buzzwords. Avoid making up statistics — use only what's given.";
+
+  const userMessage = `Write a ${typeLabel} of approximately ${length} words.
+
+ORGANIZATION PROFILE:
+${JSON.stringify(profile, null, 2)}
+
+THIS SPECIFIC GRANT:
+Funder: ${funder || '(not specified)'}
+Program: ${program || '(not specified)'}
+Amount requested: ${amount ? '$' + amount : '(not specified)'}
+Project period: ${period || '(not specified)'}
+Specific project/need: ${project || '(not specified)'}
+Funder priorities to emphasize: ${priorities || '(none specified)'}
+
+Write the ${typeLabel} now. Use the organization's real numbers. Match the funder's priorities where they align with the pantry's actual work. Do not fabricate statistics or names.`;
+
+  const btn = document.getElementById('draftBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Drafting…';
+  const result = document.getElementById('draftResult');
+  result.style.display = 'block';
+  result.innerHTML = '<div class="notice notice-info">Writing draft — this can take 20–40 seconds…</div>';
+
+  try {
+    const res = await fetch(PANTRY_SERVER + '/draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, userMessage, maxTokens: Math.max(1500, Math.round(parseInt(length) * 2.5)) })
+    });
+    const parsed = await res.json();
+    if (parsed.error) throw new Error(parsed.error);
+
+    result.innerHTML = '<div class="btn-row"><button class="btn btn-secondary" onclick="copyDraft()">📋 Copy</button> <button class="btn btn-neutral" onclick="downloadDraft()">📥 Download</button></div><div class="draft-output" id="draftText">' + escapeHtml(parsed.text) + '</div>';
+  } catch (err) {
+    result.innerHTML = '<div class="notice notice-error">❌ Draft failed: ' + escapeHtml(err.message || 'unknown') + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✨ Generate Draft';
+  }
+}
+
+function copyDraft() {
+  const t = document.getElementById('draftText');
+  if (!t) return;
+  navigator.clipboard.writeText(t.textContent).then(() => showToast('Copied to clipboard'));
+}
+function downloadDraft() {
+  const t = document.getElementById('draftText');
+  if (!t) return;
+  const blob = new Blob([t.textContent], {type: 'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'grant_draft_' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function clearDraft() {
+  ['d-funder','d-program','d-amount','d-period','d-project','d-priorities'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('draftResult').style.display = 'none';
+}
+
+// ---- PIPELINE ----
+function savePipeline() {
+  const funder = document.getElementById('pipe-funder').value.trim();
+  if (!funder) { showToast('Funder name required', true); return; }
+  const data = ensureKeys(loadData());
+  const id = document.getElementById('pipeEditId').value || uuid();
+  const entry = {
+    id, funder,
+    program: document.getElementById('pipe-program').value.trim(),
+    amount: parseFloat(document.getElementById('pipe-amount').value) || 0,
+    deadline: document.getElementById('pipe-deadline').value,
+    status: document.getElementById('pipe-status').value,
+    notes: document.getElementById('pipe-notes').value.trim()
+  };
+  const ex = data.grantPipeline.findIndex(x => x.id === id);
+  if (ex >= 0) data.grantPipeline[ex] = entry;
+  else data.grantPipeline.push(entry);
+  saveLocal(data);
+  scheduleSync();
+  showToast('Saved');
+  clearPipeForm();
+  renderPipeline();
+}
+function editPipeline(id) {
+  const data = ensureKeys(loadData());
+  const p = data.grantPipeline.find(x => x.id === id); if (!p) return;
+  document.getElementById('pipeEditId').value = p.id;
+  document.getElementById('pipe-funder').value = p.funder || '';
+  document.getElementById('pipe-program').value = p.program || '';
+  document.getElementById('pipe-amount').value = p.amount || '';
+  document.getElementById('pipe-deadline').value = p.deadline || '';
+  document.getElementById('pipe-status').value = p.status || 'idea';
+  document.getElementById('pipe-notes').value = p.notes || '';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+function deletePipeline(id) {
+  if (!confirm('Delete this pipeline entry?')) return;
+  const data = ensureKeys(loadData());
+  data.grantPipeline = data.grantPipeline.filter(x => x.id !== id);
+  saveLocal(data);
+  scheduleSync();
+  renderPipeline();
+}
+function clearPipeForm() {
+  document.getElementById('pipeEditId').value = '';
+  ['pipe-funder','pipe-program','pipe-amount','pipe-deadline','pipe-notes'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('pipe-status').selectedIndex = 0;
+}
+function renderPipeline() {
+  const data = ensureKeys(loadData());
+  const list = data.grantPipeline.slice().sort((a,b) => (a.deadline||'').localeCompare(b.deadline||''));
+
+  document.getElementById('stat-total').textContent = list.length;
+  const pending = list.filter(x => x.status === 'idea' || x.status === 'drafting' || x.status === 'submitted').length;
+  document.getElementById('stat-pending').textContent = pending;
+  const thisYear = new Date().getFullYear();
+  const awarded = list.filter(x => x.status === 'awarded' && (x.deadline||'').slice(0,4) == thisYear).reduce((s,x) => s + (x.amount||0), 0);
+  document.getElementById('stat-awarded').textContent = '$' + Math.round(awarded).toLocaleString();
+  const requested = list.filter(x => x.status !== 'idea').reduce((s,x) => s + (x.amount||0), 0);
+  document.getElementById('stat-requested').textContent = '$' + Math.round(requested).toLocaleString();
+
+  const tbody = document.getElementById('pipeBody');
+  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No pipeline entries yet.</td></tr>'; return; }
+  const statLabel = { idea:'Idea', drafting:'Drafting', submitted:'Submitted', awarded:'Awarded', declined:'Declined' };
+  tbody.innerHTML = list.map(p => `<tr>
+    <td><strong>${escapeHtml(p.funder)}</strong>${p.notes ? '<br><span class="small muted">' + escapeHtml(p.notes) + '</span>' : ''}</td>
+    <td>${escapeHtml(p.program||'')}</td>
+    <td>$${(p.amount||0).toLocaleString()}</td>
+    <td>${fmtDate(p.deadline)}</td>
+    <td><span class="pipeline-status st-${p.status}">${statLabel[p.status]||p.status}</span></td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="editPipeline('${p.id}')">✎</button>
+      <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="deletePipeline('${p.id}')">✕</button>
+    </td>
+  </tr>`).join('');
+}
+
+function exportPipelineCSV() {
+  const data = ensureKeys(loadData());
+  let csv = 'Funder,Program,Amount,Deadline,Status,Notes\n';
+  data.grantPipeline.forEach(p => {
+    csv += `"${p.funder}","${p.program||''}",${p.amount||0},${p.deadline||''},${p.status},"${(p.notes||'').replace(/"/g,'""')}"\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'grant_pipeline_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---- INIT ----
+setSyncStatus('saving');
+pullFromServer().then(() => {
+  loadProfileToForm();
+  renderPipeline();
+});
+loadProfileToForm();
+renderPipeline();
+</script>
+
+</body>
+</html>
