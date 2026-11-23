@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grant Writing · Maricopa Pantry & VINP</title>
+<title>Grants Hub · Maricopa Pantry & VINP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -69,6 +69,79 @@
     color: var(--black); margin: var(--s5) 0 var(--s3); padding-bottom: var(--s2);
     border-bottom: 2px solid var(--red);
   }
+  .funder-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--s2) 0; }
+  .ftag {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 3px; background: var(--cream); color: var(--gray);
+  }
+  .ftag.cat-ops { background: #e8f0fe; color: #1e5aa6; }
+  .ftag.cat-capacity { background: var(--amber-soft); color: var(--amber); }
+  .ftag.cat-equipment { background: #f3e8fd; color: #6b21a8; }
+  .ftag.cat-fuel { background: var(--green-soft); color: var(--green); }
+  .ftag.cat-retail { background: var(--red-soft); color: var(--red-dark); }
+  .ftag.cat-foundation { background: #fef3e2; color: #a16207; }
+  .ftag.cat-veteran { background: #e2f0f9; color: #1e3a5f; }
+  .ftag.cat-tech { background: #e8f5ec; color: #2d6a4f; }
+  .filter-chips {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--s4);
+    padding: var(--s3) 0; border-bottom: 1px solid var(--line);
+  }
+  .fchip {
+    padding: 6px 14px; border-radius: 16px; border: 1px solid var(--line);
+    background: var(--white); cursor: pointer; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--gray); min-height: 32px;
+  }
+  .fchip:hover { border-color: var(--red); color: var(--red); }
+  .fchip.active { background: var(--red); color: var(--white); border-color: var(--red); }
+  .fchip .count { opacity: 0.7; margin-left: 4px; font-size: 11px; }
+
+  .funder-amount { font-weight: 700; color: var(--red); font-size: 13px; }
+  .funder-cycle { font-size: 12px; color: var(--gray); }
+  .funder-footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-top: var(--s3); flex-wrap: wrap; }
+
+  textarea {
+    width: 100%; font-family: inherit; font-size: 14px; line-height: 1.5;
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px;
+    background: var(--white); color: var(--black); resize: vertical;
+    box-sizing: border-box;
+  }
+  textarea:focus { outline: 2px solid var(--red); outline-offset: -1px; border-color: var(--red); }
+
+  .attachment-list { margin-top: var(--s2); }
+  .attachment-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    background: var(--cream); border-radius: 4px; margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .attachment-row .fname { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .attachment-row .fsize { color: var(--gray); font-size: 12px; }
+  .attachment-row .fact { display: flex; gap: 6px; flex-shrink: 0; }
+  .attachment-row button {
+    background: transparent; border: 1px solid var(--line); padding: 4px 8px;
+    border-radius: 3px; cursor: pointer; font-size: 11px; font-family: inherit;
+    color: var(--gray);
+  }
+  .attachment-row button:hover { border-color: var(--red); color: var(--red); }
+
+  .research-item {
+    background: var(--white); border: 1px solid var(--line); border-left: 3px solid var(--red);
+    border-radius: 4px; padding: var(--s4); margin-bottom: var(--s3);
+  }
+  .research-item h4 { margin: 0 0 6px; font-family: 'Fraunces', serif; color: var(--black); font-size: 16px; }
+  .research-item .r-meta { font-size: 12px; color: var(--gray); margin-bottom: var(--s2); }
+  .research-item .r-note { font-size: 14px; line-height: 1.5; }
+  .research-item .r-actions { display: flex; gap: 8px; margin-top: var(--s3); }
+
+  .pipe-expand {
+    background: var(--cream); border-top: 1px solid var(--line); padding: var(--s3);
+    font-size: 13px; line-height: 1.5;
+  }
+  .pipe-expand h5 { margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gray); }
+  .pipe-expand .details-text { white-space: pre-wrap; margin-bottom: var(--s3); }
+  .expand-toggle {
+    background: transparent; border: none; cursor: pointer; font-size: 11px;
+    color: var(--red); font-family: inherit; font-weight: 600; padding: 4px 0;
+  }
 </style>
 </head>
 <body>
@@ -76,8 +149,8 @@
 <div class="header">
   <a class="header-back" href="index.html">← Home</a>
   <div class="header-titles">
-    <div class="header-title">Grant Writing</div>
-    <div class="header-sub">Profile · Drafter · Pipeline · Funders &nbsp; <span id="syncStatus" style="font-weight:600;"></span></div>
+    <div class="header-title">Grants Hub</div>
+    <div class="header-sub">Profile · Drafter · Pipeline · Research · Funders &nbsp; <span id="syncStatus" style="font-weight:600;"></span></div>
   </div>
 </div>
 
@@ -94,6 +167,7 @@
     <button class="subtab active" onclick="showSubtab('profile', this)">📋 Org Profile</button>
     <button class="subtab" onclick="showSubtab('drafter', this)">✍️ Drafter</button>
     <button class="subtab" onclick="showSubtab('pipeline', this)">📊 Pipeline</button>
+    <button class="subtab" onclick="showSubtab('research', this)">📚 Research</button>
     <button class="subtab" onclick="showSubtab('funders', this)">🔍 Funders</button>
   </div>
 
@@ -327,8 +401,18 @@
         </div>
       </div>
 
-      <label>Notes</label>
-      <input type="text" id="pipe-notes" />
+      <label>Short note (table summary)</label>
+      <input type="text" id="pipe-notes" placeholder="e.g., 'Jim submitted 10/15, decision by Nov'" />
+
+      <label>Details &amp; shared notes (who you talked to, what they said, what to try next)</label>
+      <textarea id="pipe-details" rows="5" placeholder="Running notes the whole team can see. Date your entries so future-you knows when things happened."></textarea>
+
+      <label>Attachments (up to 2 files, 1 MB each — grant guidelines, submission confirmation, award letter)</label>
+      <div class="btn-row" style="margin-top:0;">
+        <button class="btn btn-neutral" onclick="document.getElementById('pipe-file-input').click()">📎 Add file</button>
+        <input type="file" id="pipe-file-input" style="display:none;" onchange="addPipelineAttachment(this)" />
+      </div>
+      <div class="attachment-list" id="pipe-attachments"></div>
 
       <div class="btn-row">
         <button class="btn btn-primary" onclick="savePipeline()">💾 Save</button>
@@ -350,14 +434,66 @@
     </div>
   </div>
 
+  <!-- ============ RESEARCH ============ -->
+  <div id="research" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title" id="research-title">Shared Research</div><div class="card-subtitle" id="research-subtitle">Links, articles, and notes the team can share.</div></div>
+        <div class="btn-row" style="margin:0;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;">
+            <input type="checkbox" id="showAllOrgsR" onchange="renderResearch()" style="width:auto;height:auto;margin:0;" />
+            Show both orgs
+          </label>
+        </div>
+      </div>
+
+      <input type="hidden" id="researchEditId" />
+
+      <div class="form-grid-2">
+        <div>
+          <label>Title / what this is</label>
+          <input type="text" id="r-title" placeholder="e.g., 'Walmart Spark Good guidelines'" />
+        </div>
+        <div>
+          <label>Added by (your name)</label>
+          <input type="text" id="r-addedby" placeholder="e.g., 'Matt'" />
+        </div>
+      </div>
+
+      <label>Link (URL)</label>
+      <input type="url" id="r-url" placeholder="https://..." />
+
+      <label>Why it matters (short note for the team)</label>
+      <textarea id="r-note" rows="3" placeholder="One or two sentences on what's here and why the team should care."></textarea>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveResearch()">💾 Save Entry</button>
+        <button class="btn btn-neutral" onclick="clearResearchForm()">Clear</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Research Feed</div></div>
+      </div>
+      <div id="researchList"></div>
+    </div>
+  </div>
+
   <!-- ============ FUNDERS ============ -->
   <div id="funders" class="subpanel">
     <div class="card">
       <div class="card-header">
-        <div><div class="card-title">Funder Directory</div><div class="card-subtitle">Food-security funders + veteran-focused funders.</div></div>
+        <div><div class="card-title">Funder Directory</div><div class="card-subtitle">Filter by funding need. Tap a chip below.</div></div>
       </div>
+      <div class="filter-chips" id="funderChips"></div>
+      <div id="fundersList"></div>
+    </div>
+  </div>
 
-      <div class="funder-section-title">🥫 Food Security / Community Basic Needs</div>
+  <!-- Old static funders section (hidden, kept only so edits don't break) -->
+  <div style="display:none;"><div>
+    <div class="funder-section-title">🥫 Food Security / Community Basic Needs</div>
 
       <div class="funder-card">
         <h4>Arizona Community Foundation (ACF)</h4>
@@ -482,13 +618,22 @@ const ORGS = {
 let activeOrgId = 'mp';
 
 function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); } }
-function defaultData() { return { grantData: { orgs: {}, pipeline: [] }, settings: {} }; }
+function defaultData() { return { grantData: { orgs: {}, pipeline: [], research: [] }, settings: {} }; }
 function ensureKeys(d) {
-  d.grantData = d.grantData || { orgs: {}, pipeline: [] };
+  d.grantData = d.grantData || { orgs: {}, pipeline: [], research: [] };
   d.grantData.orgs = d.grantData.orgs || {};
   d.grantData.pipeline = d.grantData.pipeline || [];
+  d.grantData.research = d.grantData.research || [];
+  // Normalize older pipeline rows
+  d.grantData.pipeline.forEach(p => {
+    if (!p.details) p.details = '';
+    if (!Array.isArray(p.attachments)) p.attachments = [];
+  });
   return d;
 }
+
+// In-memory holder for attachments on the pipeline form before save
+let pendingAttachments = [];
 function saveLocal(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){} }
 function showToast(msg, isErr) {
   const t = document.getElementById('toast'); t.textContent = msg;
@@ -520,7 +665,11 @@ function scheduleSync() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orgProfile: { orgs: d.grantData.orgs, activeOrgId: activeOrgId },
+          orgProfile: {
+            orgs: d.grantData.orgs,
+            activeOrgId: activeOrgId,
+            research: d.grantData.research
+          },
           pipeline: d.grantData.pipeline,
           drafts: []
         })
@@ -550,8 +699,13 @@ async function pullFromServer() {
     // Pipeline: tag legacy entries with mp if they have no orgId
     local.grantData.pipeline = (sd.pipeline || []).map(p => {
       if (!p.orgId) p.orgId = 'mp';
+      if (!p.details) p.details = '';
+      if (!Array.isArray(p.attachments)) p.attachments = [];
       return p;
     });
+
+    // Pull research (stored inside orgProfile blob)
+    local.grantData.research = Array.isArray(op.research) ? op.research : [];
 
     saveLocal(local);
     setSyncStatus('saved');
@@ -566,6 +720,7 @@ function setActiveOrg(orgId) {
   applyOrgToUI();
   loadProfileToForm();
   renderPipeline();
+  renderResearch();
 }
 
 function applyOrgToUI() {
@@ -593,6 +748,8 @@ function showSubtab(id, btn) {
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
   if (id === 'pipeline') renderPipeline();
+  if (id === 'research') renderResearch();
+  if (id === 'funders') renderFunders();
 }
 
 // ---- ORG PROFILE ----
@@ -723,7 +880,9 @@ function savePipeline() {
     amount: parseFloat(document.getElementById('pipe-amount').value) || 0,
     deadline: document.getElementById('pipe-deadline').value,
     status: document.getElementById('pipe-status').value,
-    notes: document.getElementById('pipe-notes').value.trim()
+    notes: document.getElementById('pipe-notes').value.trim(),
+    details: document.getElementById('pipe-details').value.trim(),
+    attachments: pendingAttachments.slice()
   };
   const ex = data.grantData.pipeline.findIndex(x => x.id === id);
   if (ex >= 0) data.grantData.pipeline[ex] = entry;
@@ -744,6 +903,9 @@ function editPipeline(id) {
   document.getElementById('pipe-deadline').value = p.deadline || '';
   document.getElementById('pipe-status').value = p.status || 'idea';
   document.getElementById('pipe-notes').value = p.notes || '';
+  document.getElementById('pipe-details').value = p.details || '';
+  pendingAttachments = (p.attachments || []).slice();
+  renderPendingAttachments();
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 function deletePipeline(id) {
@@ -756,8 +918,64 @@ function deletePipeline(id) {
 }
 function clearPipeForm() {
   document.getElementById('pipeEditId').value = '';
-  ['pipe-funder','pipe-program','pipe-amount','pipe-deadline','pipe-notes'].forEach(i => document.getElementById(i).value = '');
+  ['pipe-funder','pipe-program','pipe-amount','pipe-deadline','pipe-notes','pipe-details'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('pipe-status').selectedIndex = 0;
+  pendingAttachments = [];
+  renderPendingAttachments();
+}
+
+// Attachments on the pipeline form
+function addPipelineAttachment(input) {
+  const f = input.files[0];
+  input.value = '';
+  if (!f) return;
+  if (pendingAttachments.length >= 2) { showToast('Max 2 files per entry', true); return; }
+  if (f.size > 1024 * 1024) { showToast('File too large (max 1 MB)', true); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingAttachments.push({
+      name: f.name,
+      type: f.type || 'application/octet-stream',
+      size: f.size,
+      data: e.target.result  // base64 data URL
+    });
+    renderPendingAttachments();
+  };
+  reader.readAsDataURL(f);
+}
+function removePendingAttachment(i) {
+  pendingAttachments.splice(i, 1);
+  renderPendingAttachments();
+}
+function renderPendingAttachments() {
+  const div = document.getElementById('pipe-attachments');
+  if (!div) return;
+  if (pendingAttachments.length === 0) { div.innerHTML = ''; return; }
+  div.innerHTML = pendingAttachments.map((a, i) => `
+    <div class="attachment-row">
+      <span class="fname">📎 ${escapeHtml(a.name)}</span>
+      <span class="fsize">${Math.round(a.size/1024)} KB</span>
+      <span class="fact">
+        <button onclick="downloadAttachment(${i}, 'pending')">Download</button>
+        <button onclick="removePendingAttachment(${i})">Remove</button>
+      </span>
+    </div>`).join('');
+}
+function downloadAttachment(i, mode, pipelineId) {
+  let a;
+  if (mode === 'pending') {
+    a = pendingAttachments[i];
+  } else {
+    const data = ensureKeys(loadData());
+    const p = data.grantData.pipeline.find(x => x.id === pipelineId);
+    if (!p || !p.attachments || !p.attachments[i]) return;
+    a = p.attachments[i];
+  }
+  if (!a) return;
+  const link = document.createElement('a');
+  link.href = a.data;
+  link.download = a.name;
+  link.click();
 }
 function renderPipeline() {
   const data = ensureKeys(loadData());
@@ -782,9 +1000,26 @@ function renderPipeline() {
   const statLabel = { idea:'Idea', drafting:'Drafting', submitted:'Submitted', awarded:'Awarded', declined:'Declined' };
   tbody.innerHTML = list.map(p => {
     const orgTag = (ORGS[p.orgId] && ORGS[p.orgId].shortName) || p.orgId;
+    const hasExpand = (p.details && p.details.trim()) || (p.attachments && p.attachments.length);
+    const expandBtn = hasExpand
+      ? `<button class="expand-toggle" onclick="togglePipeRow('${p.id}')">▸ Show notes & files</button>`
+      : '';
+    const attachHtml = (p.attachments || []).map((a, i) => `
+      <div class="attachment-row">
+        <span class="fname">📎 ${escapeHtml(a.name)}</span>
+        <span class="fsize">${Math.round(a.size/1024)} KB</span>
+        <span class="fact"><button onclick="downloadAttachment(${i}, 'saved', '${p.id}')">Download</button></span>
+      </div>`).join('');
+    const expandRow = hasExpand ? `
+      <tr id="expand-${p.id}" style="display:none;">
+        <td colspan="7" class="pipe-expand">
+          ${p.details ? '<h5>Details &amp; shared notes</h5><div class="details-text">' + escapeHtml(p.details) + '</div>' : ''}
+          ${attachHtml ? '<h5>Attachments</h5>' + attachHtml : ''}
+        </td>
+      </tr>` : '';
     return `<tr>
       <td><span class="badge badge-neutral">${escapeHtml(orgTag)}</span></td>
-      <td><strong>${escapeHtml(p.funder)}</strong>${p.notes ? '<br><span class="small muted">' + escapeHtml(p.notes) + '</span>' : ''}</td>
+      <td><strong>${escapeHtml(p.funder)}</strong>${p.notes ? '<br><span class="small muted">' + escapeHtml(p.notes) + '</span>' : ''}${expandBtn ? '<br>' + expandBtn : ''}</td>
       <td>${escapeHtml(p.program||'')}</td>
       <td>$${(p.amount||0).toLocaleString()}</td>
       <td>${fmtDate(p.deadline)}</td>
@@ -793,8 +1028,15 @@ function renderPipeline() {
         <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="editPipeline('${p.id}')">✎</button>
         <button class="btn btn-neutral" style="padding:6px 10px;min-height:36px;" onclick="deletePipeline('${p.id}')">✕</button>
       </td>
-    </tr>`;
+    </tr>${expandRow}`;
   }).join('');
+}
+
+function togglePipeRow(id) {
+  const row = document.getElementById('expand-' + id);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : '';
 }
 
 function exportPipelineCSV() {
@@ -812,15 +1054,273 @@ function exportPipelineCSV() {
   URL.revokeObjectURL(url);
 }
 
+// ---- RESEARCH ----
+function saveResearch() {
+  const title = document.getElementById('r-title').value.trim();
+  const url = document.getElementById('r-url').value.trim();
+  const note = document.getElementById('r-note').value.trim();
+  const addedby = document.getElementById('r-addedby').value.trim();
+  if (!title) { showToast('Title required', true); return; }
+  const data = ensureKeys(loadData());
+  const id = document.getElementById('researchEditId').value || uuid();
+  const existing = data.grantData.research.find(x => x.id === id);
+  const entry = {
+    id,
+    orgId: existing ? existing.orgId : activeOrgId,
+    title, url, note,
+    addedby: addedby || (existing ? existing.addedby : ''),
+    date: existing ? existing.date : new Date().toISOString().slice(0,10)
+  };
+  const ex = data.grantData.research.findIndex(x => x.id === id);
+  if (ex >= 0) data.grantData.research[ex] = entry;
+  else data.grantData.research.push(entry);
+  saveLocal(data);
+  scheduleSync();
+  showToast('Research saved');
+  clearResearchForm();
+  renderResearch();
+}
+function editResearch(id) {
+  const data = ensureKeys(loadData());
+  const r = data.grantData.research.find(x => x.id === id); if (!r) return;
+  document.getElementById('researchEditId').value = r.id;
+  document.getElementById('r-title').value = r.title || '';
+  document.getElementById('r-url').value = r.url || '';
+  document.getElementById('r-note').value = r.note || '';
+  document.getElementById('r-addedby').value = r.addedby || '';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+function deleteResearch(id) {
+  if (!confirm('Delete this research entry?')) return;
+  const data = ensureKeys(loadData());
+  data.grantData.research = data.grantData.research.filter(x => x.id !== id);
+  saveLocal(data);
+  scheduleSync();
+  renderResearch();
+}
+function clearResearchForm() {
+  document.getElementById('researchEditId').value = '';
+  ['r-title','r-url','r-note','r-addedby'].forEach(i => document.getElementById(i).value = '');
+}
+function renderResearch() {
+  const data = ensureKeys(loadData());
+  const showAll = document.getElementById('showAllOrgsR') && document.getElementById('showAllOrgsR').checked;
+  let list = data.grantData.research.slice();
+  if (!showAll) list = list.filter(x => x.orgId === activeOrgId);
+  list.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  const sub = document.getElementById('research-subtitle');
+  if (sub) sub.textContent = showAll ? 'Showing both organizations.' : 'Showing ' + ORGS[activeOrgId].shortName + ' only.';
+
+  const list_el = document.getElementById('researchList');
+  if (!list_el) return;
+  if (list.length === 0) {
+    list_el.innerHTML = '<div class="empty">No research entries yet. Add one above.</div>';
+    return;
+  }
+  list_el.innerHTML = list.map(r => {
+    const orgTag = (ORGS[r.orgId] && ORGS[r.orgId].shortName) || r.orgId;
+    const linkHtml = r.url ? '<a href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener">' + escapeHtml(r.url) + '</a>' : '';
+    return `<div class="research-item">
+      <h4>${escapeHtml(r.title)}</h4>
+      <div class="r-meta">
+        <span class="badge badge-neutral">${escapeHtml(orgTag)}</span>
+        ${r.addedby ? ' · Added by ' + escapeHtml(r.addedby) : ''}
+        ${r.date ? ' · ' + fmtDate(r.date) : ''}
+      </div>
+      ${r.note ? '<div class="r-note">' + escapeHtml(r.note) + '</div>' : ''}
+      ${linkHtml ? '<div class="r-note" style="margin-top:6px;">🔗 ' + linkHtml + '</div>' : ''}
+      <div class="r-actions">
+        <button class="btn btn-neutral" style="padding:4px 10px;min-height:32px;font-size:12px;" onclick="editResearch('${r.id}')">✎ Edit</button>
+        <button class="btn btn-neutral" style="padding:4px 10px;min-height:32px;font-size:12px;" onclick="deleteResearch('${r.id}')">✕ Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- FUNDERS DIRECTORY ----
+// Tags: ops (direct operations), capacity (payroll/leadership), equipment, fuel, retail (store-level),
+//       foundation (grantmaking foundation), veteran (veteran-focused), tech (ads/software)
+const FUNDERS = [
+  // --- Local retail (easy entry, store-manager decided) ---
+  { name: 'Walmart Spark Good Local Grants', url: 'https://walmart.org/how-we-give/local-community-grants',
+    amount: '$250 – $5,000', cycle: 'Rolling, quarterly', tags: ['retail','ops','equipment'],
+    note: 'Decided by local store manager. Register at walmart.org Spark Good, "like" each local store, apply. Maricopa + Casa Grande have Supercenters + Sam\'s Club — apply at all of them.' },
+  { name: 'TJX Foundation (Marshalls / TJ Maxx / HomeGoods)', url: 'https://www.tjx.com/corporate-responsibility/communities/our-us-foundation',
+    amount: '$1,000 – $10,000', cycle: 'Portal opens Feb; deadline Oct 31', tags: ['retail','foundation','ops','capacity'],
+    note: 'Food banks explicitly listed as priority. Requires Candid profile (you have one — claim it first). Can fund payroll for direct-service staff.' },
+  { name: 'QuikTrip Corporate Contributions', url: 'https://www.quiktrip.com/quiktrip-invests-over-3-million-in-phoenix-area-nonprofits/',
+    amount: 'Varies, $5K–$100K+', cycle: 'Invitation-based, AZ-active', tags: ['retail','fuel','ops'],
+    note: 'Gave $3M to Phoenix-area nonprofits in 2023. Hunger is a priority. Cold applications rarely succeed — contact local QT manager, ask about Phoenix-market giving contact, build relationship.' },
+  { name: 'Fry\'s / Kroger Zero Hunger Zero Waste', url: 'https://www.thekrogerco.com/sustainability/zero-hunger-zero-waste/',
+    amount: 'Varies', cycle: 'Rolling + annual', tags: ['retail','ops'],
+    note: 'Food rescue partnerships + community grants. Contact local Fry\'s community engagement rep.' },
+  { name: 'Albertsons/Safeway Foundation', url: 'https://www.albertsonscompaniesfoundation.org/',
+    amount: '$500 – $25,000', cycle: 'Rolling', tags: ['retail','ops'],
+    note: 'Hunger is one of four pillars. Local store managers nominate.' },
+  { name: 'Target Community Giving', url: 'https://corporate.target.com/sustainability-governance/community-engagement',
+    amount: 'Varies', cycle: 'Local nomination', tags: ['retail','ops','equipment'],
+    note: 'Local-store decisions for community needs. Walk into the Maricopa Target and ask for the community relations contact.' },
+  { name: 'Costco Community Donations', url: 'https://www.costco.com/charitable-contributions.html',
+    amount: 'Varies', cycle: 'Online form, 8+ weeks', tags: ['retail','ops'],
+    note: 'Children, education, and health focus — food security qualifies. Local warehouse decisions.' },
+  { name: 'Circle K Supporting Our Communities', url: 'https://www.circlek.com/give-back',
+    amount: 'Varies', cycle: 'Annual round + ad-hoc', tags: ['retail','fuel'],
+    note: 'Fuel-adjacent giving. Good fit for VINP emergency fuel grants and Pantry distribution-truck fuel.' },
+
+  // --- Equipment / infrastructure retail ---
+  { name: 'Home Depot Foundation', url: 'https://corporate.homedepot.com/foundation',
+    amount: '$500 – $25,000', cycle: 'Multiple programs, rolling', tags: ['retail','equipment'],
+    note: 'Community Impact Grants for repairs, equipment, veteran housing. Separate veteran-housing track for VINP.' },
+  { name: 'Lowe\'s Hometowns', url: 'https://www.lowes.com/l/about/lowes-hometowns.html',
+    amount: 'Up to $100,000', cycle: 'Annual nominations spring', tags: ['retail','equipment'],
+    note: 'Larger ask for facility projects (warehouse expansion, refrigeration). Competitive.' },
+
+  // --- Arizona foundations (operations / capacity) ---
+  { name: 'Arizona Community Foundation (ACF)', url: 'https://www.azfoundation.org',
+    amount: '$1K – $100K+', cycle: 'Multiple cycles/year', tags: ['foundation','ops','capacity'],
+    note: 'Many funds including community grants and field-of-interest funds. Statewide. Strong fit for both Pantry capacity and VINP veteran-services.' },
+  { name: 'Vitalyst Health Foundation', url: 'https://vitalysthealth.org',
+    amount: 'Varies', cycle: 'Cycle-based', tags: ['foundation','ops'],
+    note: 'Food-as-medicine, SDoH framing. Statewide AZ.' },
+  { name: 'Piper Trust (Virginia G. Piper Charitable Trust)', url: 'https://pipertrust.org',
+    amount: '$25K+', cycle: 'LOI first, by invitation', tags: ['foundation','capacity','ops'],
+    note: 'Explicit capacity-building grants. Maricopa County focus. Competitive but attainable with strong narrative.' },
+  { name: 'Weinberg Foundation', url: 'https://www.hjweinbergfoundation.org/',
+    amount: '$25K – $250K', cycle: 'Multi-year possible', tags: ['foundation','capacity','ops'],
+    note: 'Major GOS funder for basic needs nonprofits. Small nonprofits welcome.' },
+  { name: 'CFSA CORE Support', url: 'https://www.cfsaz.org',
+    amount: 'Varies', cycle: 'Annual', tags: ['foundation','capacity'],
+    note: 'Core operating support — one of the few sources for unrestricted funding. Southern AZ focus.' },
+  { name: 'APS Supports Our Communities', url: 'https://www.aps.com/en/About/Our-Company/Community/',
+    amount: '$500 – $10,000', cycle: 'Rolling', tags: ['foundation','ops','equipment'],
+    note: 'Arizona Public Service utility giving — good fit for a Maricopa nonprofit.' },
+  { name: 'SRP Community Giving', url: 'https://www.srpnet.com/grid-water-management/community/giving',
+    amount: 'Varies', cycle: 'Rolling', tags: ['foundation','ops'],
+    note: 'Salt River Project utility giving. Hunger relief is an eligible category.' },
+
+  // --- Veteran-focused (for VINP) ---
+  { name: 'Bob Woodruff Foundation', url: 'https://bobwoodrufffoundation.org',
+    amount: '$25K+', cycle: 'LOI + feedback pathway', tags: ['veteran','foundation','ops','capacity'],
+    note: 'VINP already submitted via preliminary feedback path. Social determinants of health framing. Requires $50K/yr gross receipts.' },
+  { name: 'Wounded Warrior Project — Community Impact', url: 'https://www.woundedwarriorproject.org',
+    amount: '$10K+', cycle: 'Cycle-based', tags: ['veteran','foundation','ops'],
+    note: 'Post-9/11 veterans. Economic empowerment, mental health, physical health.' },
+  { name: 'Newman\'s Own Foundation — Veteran Grants', url: 'https://newmansownfoundation.org',
+    amount: 'Varies', cycle: 'Annual cycle', tags: ['veteran','foundation','ops','capacity'],
+    note: 'Multi-year support possible. Military families focus.' },
+  { name: 'USAA Foundation', url: 'https://www.usaa.com/inet/wc/usaa-foundation',
+    amount: 'Varies', cycle: 'Annual', tags: ['veteran','foundation','capacity'],
+    note: 'Financial readiness + emergency assistance for military families.' },
+  { name: 'DAV Charitable Service Trust', url: 'https://www.cst.dav.org',
+    amount: '$5K – $50K', cycle: 'Annual', tags: ['veteran','foundation','ops'],
+    note: 'Direct services for disabled veterans — food, shelter, transportation.' },
+  { name: 'PenFed Foundation', url: 'https://penfedfoundation.org',
+    amount: 'Varies', cycle: 'Rolling', tags: ['veteran','foundation','capacity'],
+    note: 'Veteran service org operating support.' },
+  { name: 'May & Stanley Smith Charitable Trust', url: 'https://www.mayandstanleysmith.org',
+    amount: 'Varies', cycle: 'Annual', tags: ['veteran','foundation','ops','capacity'],
+    note: 'Veterans + human services GOS. Western US.' },
+  { name: 'Home Depot Foundation — Veteran Housing', url: 'https://corporate.homedepot.com/foundation',
+    amount: 'Varies', cycle: 'Multiple programs', tags: ['veteran','retail','equipment'],
+    note: 'Dedicated veteran housing track. For VINP partnership scenarios.' },
+
+  // --- Local / Pinal County / Municipal ---
+  { name: 'City of Maricopa — Community Grants', url: 'https://www.maricopa-az.gov/',
+    amount: '$500 – $10,000', cycle: 'Annual', tags: ['foundation','ops'],
+    note: 'Both orgs serve Maricopa residents — alignment is strong. Check City website annually for grant cycle.' },
+  { name: 'Pinal County — CDBG + community funds', url: 'https://www.pinal.gov/',
+    amount: 'Varies', cycle: 'Annual CDBG cycle', tags: ['foundation','ops','equipment'],
+    note: 'Federal CDBG pass-through for food security infrastructure + veteran services. Contact County Community Services.' },
+
+  // --- Food system / Feeding America network ---
+  { name: 'Feeding America — Local Food Bank Grants', url: 'https://www.feedingamerica.org',
+    amount: 'Varies', cycle: 'Through St. Mary\'s', tags: ['ops','equipment'],
+    note: 'Ask St. Mary\'s Food Bank Alliance about pass-through Feeding America grants available to member agencies. Often funds equipment.' },
+  { name: 'AmpleHarvest.org', url: 'https://ampleharvest.org',
+    amount: 'Non-cash: fresh produce', tags: ['ops'],
+    note: 'Not a cash grant — a national network of home gardeners donating excess produce to local pantries. Register to receive referrals.' },
+  { name: 'Kellogg Foundation', url: 'https://www.wkkf.org',
+    amount: '$50K+', cycle: 'LOI first', tags: ['foundation','ops','capacity'],
+    note: 'Food systems capacity building. Larger scale, worth a shot once Pantry has strong outcomes data.' },
+
+  // --- Tech / Ads ---
+  { name: 'Google Ad Grant', url: 'https://www.google.com/grants/',
+    amount: '$10,000/month in free ads', cycle: 'Apply once, maintain', tags: ['tech','ops'],
+    note: 'Not cash — $10K/month in free Google search ads. See the Pantry SEO Checklist for the step-by-step qualification path.' },
+  { name: 'Microsoft Technology for Social Impact', url: 'https://www.microsoft.com/en-us/nonprofits',
+    amount: 'Free software + discounts', cycle: 'Verify at TechSoup', tags: ['tech','capacity'],
+    note: 'Free Microsoft 365, Azure credits, Dynamics 365 for qualified 501(c)(3)s.' },
+  { name: 'TechSoup', url: 'https://www.techsoup.org',
+    amount: 'Up to 95% off software', tags: ['tech','capacity'],
+    note: 'Gateway to Google, Microsoft, Adobe, Zoom discounts for nonprofits. Required registration before Google Ad Grant.' },
+];
+
+const FUNDER_CATS = [
+  { id: 'all',       label: 'All' },
+  { id: 'ops',       label: 'Operations' },
+  { id: 'capacity',  label: 'Payroll / Capacity' },
+  { id: 'equipment', label: 'Equipment' },
+  { id: 'fuel',      label: 'Fuel' },
+  { id: 'retail',    label: 'Local retail' },
+  { id: 'foundation',label: 'Foundations' },
+  { id: 'veteran',   label: 'Veteran-focused' },
+  { id: 'tech',      label: 'Tech / Ads' },
+];
+let funderFilter = 'all';
+
+function renderFunders() {
+  const chips = document.getElementById('funderChips');
+  const listEl = document.getElementById('fundersList');
+  if (!chips || !listEl) return;
+
+  // Chips with counts
+  chips.innerHTML = FUNDER_CATS.map(c => {
+    const n = c.id === 'all' ? FUNDERS.length : FUNDERS.filter(f => f.tags.includes(c.id)).length;
+    const active = c.id === funderFilter ? ' active' : '';
+    return `<button class="fchip${active}" onclick="setFunderFilter('${c.id}')">${escapeHtml(c.label)}<span class="count">${n}</span></button>`;
+  }).join('');
+
+  const list = funderFilter === 'all'
+    ? FUNDERS
+    : FUNDERS.filter(f => f.tags.includes(funderFilter));
+
+  listEl.innerHTML = list.map(f => {
+    const tagHtml = f.tags.map(t => `<span class="ftag cat-${t}">${escapeHtml(t)}</span>`).join('');
+    const urlHost = f.url ? (new URL(f.url).hostname.replace(/^www\./, '')) : '';
+    return `<div class="funder-card">
+      <h4>${escapeHtml(f.name)}</h4>
+      <div class="funder-tags">${tagHtml}</div>
+      <p>${escapeHtml(f.note)}</p>
+      <div class="funder-footer">
+        <div>
+          <div class="funder-amount">${escapeHtml(f.amount || '')}</div>
+          <div class="funder-cycle">${escapeHtml(f.cycle || '')}</div>
+        </div>
+        ${f.url ? '<a href="' + escapeHtml(f.url) + '" target="_blank" rel="noopener">' + escapeHtml(urlHost) + ' →</a>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setFunderFilter(id) {
+  funderFilter = id;
+  renderFunders();
+}
+
 // ---- INIT ----
 setSyncStatus('saving');
 applyOrgToUI();
 pullFromServer().then(() => {
   loadProfileToForm();
   renderPipeline();
+  renderResearch();
+  renderFunders();
 });
 loadProfileToForm();
 renderPipeline();
+renderFunders();
+renderPendingAttachments();
 </script>
 
 </body>
