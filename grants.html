@@ -142,6 +142,32 @@
     background: transparent; border: none; cursor: pointer; font-size: 11px;
     color: var(--red); font-family: inherit; font-weight: 600; padding: 4px 0;
   }
+
+  /* Calendar tab */
+  .cal-frame { position: relative; width: 100%; height: 640px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .cal-frame iframe { width: 100%; height: 100%; border: 0; }
+  .cal-subscribe-row {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-top: var(--s4);
+  }
+  .cal-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--white); color: var(--black); text-decoration: none !important;
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    min-height: var(--tap-min);
+  }
+  .cal-btn:hover { border-color: var(--red); color: var(--red); }
+  .cal-btn .ico { font-size: 16px; }
+  .cal-setup {
+    background: var(--cream); border: 1px dashed var(--red); border-radius: 6px;
+    padding: var(--s5); text-align: left;
+  }
+  .cal-setup h4 { margin: 0 0 var(--s2); font-family: 'Fraunces', serif; color: var(--red); }
+  .cal-setup ol { margin: var(--s3) 0; padding-left: 24px; }
+  .cal-setup ol li { margin-bottom: var(--s2); line-height: 1.5; }
+  .cal-input-row { display: flex; gap: 8px; margin-top: var(--s3); align-items: flex-end; flex-wrap: wrap; }
+  .cal-input-row > div { flex: 1; min-width: 240px; }
+  .cal-hint { font-size: 12px; color: var(--gray); margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -150,7 +176,7 @@
   <a class="header-back" href="index.html">← Home</a>
   <div class="header-titles">
     <div class="header-title">Grants Hub</div>
-    <div class="header-sub">Profile · Drafter · Pipeline · Research · Funders &nbsp; <span id="syncStatus" style="font-weight:600;"></span></div>
+    <div class="header-sub">Profile · Drafter · Pipeline · Research · Calendar · Funders &nbsp; <span id="syncStatus" style="font-weight:600;"></span></div>
   </div>
 </div>
 
@@ -168,6 +194,7 @@
     <button class="subtab" onclick="showSubtab('drafter', this)">✍️ Drafter</button>
     <button class="subtab" onclick="showSubtab('pipeline', this)">📊 Pipeline</button>
     <button class="subtab" onclick="showSubtab('research', this)">📚 Research</button>
+    <button class="subtab" onclick="showSubtab('calendar', this)">📅 Calendar</button>
     <button class="subtab" onclick="showSubtab('funders', this)">🔍 Funders</button>
   </div>
 
@@ -480,6 +507,65 @@
     </div>
   </div>
 
+  <!-- ============ CALENDAR ============ -->
+  <div id="calendar" class="subpanel">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Grants &amp; IT Calendar</div>
+          <div class="card-subtitle">Deadlines, portal windows, Ad Grant milestones. Subscribe once, every date syncs to your phone.</div>
+        </div>
+        <button class="btn btn-neutral" onclick="editCalendarId()" id="cal-settings-btn" style="display:none;">⚙️ Change calendar</button>
+      </div>
+
+      <div id="cal-setup-view" class="cal-setup" style="display:none;">
+        <h4>📅 First, create the Google Calendar</h4>
+        <p>Takes about 5 minutes. Only needs to be done once.</p>
+        <ol>
+          <li>Go to <a href="https://calendar.google.com" target="_blank" rel="noopener">calendar.google.com</a> signed in as the Pantry account (ideally the one that will own Google for Nonprofits).</li>
+          <li>In the left sidebar, click the <strong>+</strong> next to "Other calendars" → <strong>Create new calendar</strong>.</li>
+          <li>Name it <code>Pantry Grants &amp; IT</code>. Add a description if you want.</li>
+          <li>After it's created, click it in the sidebar → <strong>Settings and sharing</strong>.</li>
+          <li>Under <strong>Access permissions for events</strong>, decide: tick "Make available to public" if clients should see it too (not usually needed for grants/IT), or leave unticked and share with specific team members by email.</li>
+          <li>Scroll to <strong>Integrate calendar</strong> and copy the <strong>Calendar ID</strong> (looks like a long email address ending in <code>@group.calendar.google.com</code>).</li>
+          <li>Paste it below.</li>
+        </ol>
+        <div class="cal-input-row">
+          <div>
+            <label>Calendar ID</label>
+            <input type="text" id="cal-id-input" placeholder="xxxxxxxxxx@group.calendar.google.com" />
+            <div class="cal-hint">Paste from Google Calendar → Settings → Integrate calendar → Calendar ID</div>
+          </div>
+          <div style="flex: 0;">
+            <button class="btn btn-primary btn-large" onclick="saveCalendarId()">💾 Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="cal-view" style="display:none;">
+        <div class="cal-frame">
+          <iframe id="cal-iframe" src="about:blank" title="Grants &amp; IT Calendar" loading="lazy"></iframe>
+        </div>
+
+        <div style="margin-top: var(--s5);">
+          <h4 style="margin: 0 0 var(--s2); font-family: 'Fraunces', serif; color: var(--red);">Subscribe once — stay in sync forever</h4>
+          <p style="font-size: 14px; color: var(--muted); margin: 0;">Tap the button for the calendar app you use. Every current and future event syncs to your phone automatically.</p>
+          <div class="cal-subscribe-row">
+            <a class="cal-btn" id="cal-sub-google" href="#" target="_blank" rel="noopener"><span class="ico">📘</span> Add to Google Calendar</a>
+            <a class="cal-btn" id="cal-sub-apple" href="#"><span class="ico">🍎</span> Add to Apple Calendar</a>
+            <a class="cal-btn" id="cal-sub-outlook" href="#"><span class="ico">📧</span> Add to Outlook</a>
+            <button class="cal-btn" onclick="copyIcalUrl()"><span class="ico">🔗</span> Copy iCal URL</button>
+            <a class="cal-btn" id="cal-open-full" href="#" target="_blank" rel="noopener"><span class="ico">↗</span> Open full calendar</a>
+          </div>
+          <div class="cal-hint" style="margin-top: var(--s3);">
+            On iPhone: tap "Add to Apple Calendar" and confirm the subscription in the Calendar app.<br>
+            On Android: "Add to Google Calendar" is fastest. New Pantry events show up on your home screen and in notifications.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ FUNDERS ============ -->
   <div id="funders" class="subpanel">
     <div class="card">
@@ -618,12 +704,13 @@ const ORGS = {
 let activeOrgId = 'mp';
 
 function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : defaultData(); } catch(e){ return defaultData(); } }
-function defaultData() { return { grantData: { orgs: {}, pipeline: [], research: [] }, settings: {} }; }
+function defaultData() { return { grantData: { orgs: {}, pipeline: [], research: [], calendarId: '' }, settings: {} }; }
 function ensureKeys(d) {
-  d.grantData = d.grantData || { orgs: {}, pipeline: [], research: [] };
+  d.grantData = d.grantData || { orgs: {}, pipeline: [], research: [], calendarId: '' };
   d.grantData.orgs = d.grantData.orgs || {};
   d.grantData.pipeline = d.grantData.pipeline || [];
   d.grantData.research = d.grantData.research || [];
+  d.grantData.calendarId = d.grantData.calendarId || '';
   // Normalize older pipeline rows
   d.grantData.pipeline.forEach(p => {
     if (!p.details) p.details = '';
@@ -668,7 +755,8 @@ function scheduleSync() {
           orgProfile: {
             orgs: d.grantData.orgs,
             activeOrgId: activeOrgId,
-            research: d.grantData.research
+            research: d.grantData.research,
+            calendarId: d.grantData.calendarId
           },
           pipeline: d.grantData.pipeline,
           drafts: []
@@ -706,6 +794,8 @@ async function pullFromServer() {
 
     // Pull research (stored inside orgProfile blob)
     local.grantData.research = Array.isArray(op.research) ? op.research : [];
+    // Pull calendar id
+    local.grantData.calendarId = op.calendarId || '';
 
     saveLocal(local);
     setSyncStatus('saved');
@@ -750,6 +840,7 @@ function showSubtab(id, btn) {
   if (id === 'pipeline') renderPipeline();
   if (id === 'research') renderResearch();
   if (id === 'funders') renderFunders();
+  if (id === 'calendar') renderCalendar();
 }
 
 // ---- ORG PROFILE ----
@@ -1308,6 +1399,64 @@ function setFunderFilter(id) {
   renderFunders();
 }
 
+// ---- CALENDAR ----
+function saveCalendarId() {
+  const raw = (document.getElementById('cal-id-input').value || '').trim();
+  if (!raw) { showToast('Paste the calendar ID first', true); return; }
+  // Accept either the raw ID or a full share URL; extract the ID
+  let id = raw;
+  const m = raw.match(/[\w.+-]+@group\.calendar\.google\.com/i);
+  if (m) id = m[0];
+  const data = ensureKeys(loadData());
+  data.grantData.calendarId = id;
+  saveLocal(data);
+  scheduleSync();
+  showToast('Calendar connected');
+  renderCalendar();
+}
+function editCalendarId() {
+  const data = ensureKeys(loadData());
+  document.getElementById('cal-id-input').value = data.grantData.calendarId || '';
+  document.getElementById('cal-setup-view').style.display = '';
+  document.getElementById('cal-view').style.display = 'none';
+  document.getElementById('cal-settings-btn').style.display = 'none';
+}
+function renderCalendar() {
+  const data = ensureKeys(loadData());
+  const id = data.grantData.calendarId;
+  if (!id) {
+    document.getElementById('cal-setup-view').style.display = '';
+    document.getElementById('cal-view').style.display = 'none';
+    document.getElementById('cal-settings-btn').style.display = 'none';
+    return;
+  }
+  document.getElementById('cal-setup-view').style.display = 'none';
+  document.getElementById('cal-view').style.display = '';
+  document.getElementById('cal-settings-btn').style.display = '';
+
+  const enc = encodeURIComponent(id);
+  const icalUrl = 'https://calendar.google.com/calendar/ical/' + enc + '/public/basic.ics';
+  const webcalUrl = 'webcal://calendar.google.com/calendar/ical/' + enc + '/public/basic.ics';
+  document.getElementById('cal-iframe').src =
+    'https://calendar.google.com/calendar/embed?src=' + enc + '&ctz=America%2FPhoenix&mode=MONTH&showTitle=0&showPrint=0&showTabs=0&showCalendars=0';
+  document.getElementById('cal-sub-google').href =
+    'https://calendar.google.com/calendar/u/0/r?cid=' + enc;
+  document.getElementById('cal-sub-apple').href = webcalUrl;
+  document.getElementById('cal-sub-outlook').href = webcalUrl;
+  document.getElementById('cal-open-full').href =
+    'https://calendar.google.com/calendar/u/0/r?cid=' + enc;
+}
+function copyIcalUrl() {
+  const data = ensureKeys(loadData());
+  const id = data.grantData.calendarId;
+  if (!id) return;
+  const url = 'https://calendar.google.com/calendar/ical/' + encodeURIComponent(id) + '/public/basic.ics';
+  navigator.clipboard.writeText(url).then(
+    () => showToast('iCal URL copied'),
+    () => showToast('Copy failed — paste manually: ' + url, true)
+  );
+}
+
 // ---- INIT ----
 setSyncStatus('saving');
 applyOrgToUI();
@@ -1316,10 +1465,12 @@ pullFromServer().then(() => {
   renderPipeline();
   renderResearch();
   renderFunders();
+  renderCalendar();
 });
 loadProfileToForm();
 renderPipeline();
 renderFunders();
+renderCalendar();
 renderPendingAttachments();
 </script>
 
